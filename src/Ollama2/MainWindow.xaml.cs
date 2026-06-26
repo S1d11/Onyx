@@ -31,7 +31,23 @@ public partial class MainWindow : Window
                 "Ollama 2.0", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         _tray = new NotifyIconHelper(this);
+        EnableDarkTitleBar();
     }
+
+    private void EnableDarkTitleBar()
+    {
+        try
+        {
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            var darkMode = 0x01; // TRUE
+            // DWMWA_USE_IMMERSIVE_DARK_MODE = 20 (Win10 1809+) or 19 (older)
+            DwmSetWindowAttribute(hwnd, 20, ref darkMode, sizeof(int));
+        }
+        catch { /* non-critical */ }
+    }
+
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
     private async Task InitializeWebView()
     {
