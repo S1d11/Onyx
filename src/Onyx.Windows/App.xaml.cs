@@ -70,6 +70,7 @@ public partial class App : Application
 
         // Register Windows-specific implementations
         HardwareDetector.Instance = new WindowsHardwareDetector();
+        StartupRegistration.Instance = new WindowsStartupRegistration();
 
         // Background update check on startup (if enabled)
         if (AppContext.Current.Config.Current.CheckUpdatesOnStartup)

@@ -1251,6 +1251,19 @@
       toast(on ? "Thinking enabled" : "Thinking disabled");
     };
 
+    // Launch on startup toggle
+    const startupToggle = $("#toggleLaunchOnStartup");
+    startupToggle.classList.toggle("on", cfg.launchOnStartup !== false);
+    startupToggle.onclick = () => {
+      const on = startupToggle.classList.toggle("on");
+      if (state.config) {
+        state.config.launchOnStartup = on;
+        call("saveConfig", { config: state.config });
+        call("setLaunchOnStartup", { enabled: on });
+      }
+      toast(on ? "Onyx will launch on startup" : "Launch on startup disabled");
+    };
+
     // Reset to defaults
     $("#resetDefaults").onclick = () => {
       if (!confirm("Reset all settings to defaults?")) return;
@@ -1261,7 +1274,7 @@
         temperature: 0.8, topK: 40, topP: 0.9, numCtx: 4096,
         systemPrompt: "", maxSearchResults: 5, closeBehavior: "tray",
         checkUpdatesOnStartup: true, exposeToNetwork: false, modelPath: "", stream: true,
-        effort: "medium", thinkingEnabled: false, startMinimized: true,
+        effort: "medium", thinkingEnabled: false, startMinimized: true, launchOnStartup: true,
       };
       state.config = { ...state.config, ...defaults };
       call("saveConfig", { config: state.config });

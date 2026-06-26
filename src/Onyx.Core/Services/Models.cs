@@ -29,6 +29,7 @@ public class AppConfig
     public bool ThinkingEnabled { get; set; } = false;
     public bool AutoLaunchOllama { get; set; } = true;
     public bool StartMinimized { get; set; } = true;
+    public bool LaunchOnStartup { get; set; } = true;
 }
 
 public class ModelInfo

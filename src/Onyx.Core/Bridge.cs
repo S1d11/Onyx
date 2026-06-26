@@ -98,6 +98,7 @@ public sealed class Bridge
                     payload.GetProperty("release").Deserialize<ReleaseInfo>(_json)!),
                 "installUpdate" => HandleInstallUpdate(payload),
                 "getReleaseNotes" => await _updater.GetRecentReleasesAsync(),
+                "setLaunchOnStartup" => HandleSetLaunchOnStartup(payload),
                 "browseFolder" => _host.BrowseFolder(),
                 _ => null,
             };
@@ -241,6 +242,13 @@ public sealed class Bridge
     {
         var cfg = root.GetProperty("config").Deserialize<AppConfig>(_json)!;
         AppContext.Current.Config.Update(cfg);
+        return true;
+    }
+
+    private bool HandleSetLaunchOnStartup(JsonElement root)
+    {
+        var enabled = root.GetProperty("enabled").GetBoolean();
+        StartupRegistration.Instance?.SetEnabled(enabled);
         return true;
     }
 
