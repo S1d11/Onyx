@@ -44,6 +44,11 @@ public sealed class AppContext
             Orchestrator.Tools.Register(SystemTool.Definition, systemTool);
             SystemTool = systemTool;
         }
+
+        // Register the GitHub connector
+        var githubConnector = new GitHubConnector(() => Config.Current.GitHubToken);
+        Orchestrator.Tools.Register(GitHubConnector.Definition, githubConnector);
+        GitHubConnector = githubConnector;
     }
 
     public string DataDir { get; }
@@ -53,6 +58,7 @@ public sealed class AppContext
     public ChatStore Chats { get; }
     public OrchestratorService Orchestrator { get; }
     public SystemTool? SystemTool { get; }
+    public GitHubConnector GitHubConnector { get; } = null!;
 
     public void SaveAll()
     {

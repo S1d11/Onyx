@@ -30,6 +30,7 @@ public class AppConfig
     public bool AutoLaunchOllama { get; set; } = true;
     public bool StartMinimized { get; set; } = false;
     public bool LaunchOnStartup { get; set; } = true;
+    public string? GitHubToken { get; set; }
 }
 
 public class ModelInfo

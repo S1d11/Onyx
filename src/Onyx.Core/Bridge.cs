@@ -145,6 +145,7 @@ public sealed class Bridge
         {
             config = cfg,
             chats = AppContext.Current.Chats.Chats,
+            connectors = GetConnectorStatuses(),
             serverReachable = reachableFinal,
             appVersion = UpdateService.CurrentVersion.ToString(3),
             hardware = new
@@ -154,6 +155,16 @@ public sealed class Bridge
                 gpu = hw.GpuName,
                 gpuVramGb = hw.GpuVramGb,
             },
+        };
+    }
+
+    private static List<object> GetConnectorStatuses()
+    {
+        var cfg = AppContext.Current.Config.Current;
+        return new()
+        {
+            new { id = "filesystem", name = "Filesystem", description = "Full access to your computer. Read, write, delete files, run shell commands, manage registry, environment variables, and processes.", icon = "💻", color = "#6366f1", connected = true },
+            new { id = "github", name = "GitHub", description = "Access your repositories, issues, pull requests, and code. Search repos, create issues, read files, and more.", icon = "🐙", color = "#181717", connected = !string.IsNullOrEmpty(cfg.GitHubToken) },
         };
     }
 

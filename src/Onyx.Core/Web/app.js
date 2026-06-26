@@ -12,6 +12,7 @@
     view: "chat",
     appVersion: "",
     hardware: null,
+    connectors: [],
     modelVisionCache: {},   // modelName -> bool (supports vision)
     modelVisionLoading: {}, // modelName -> bool (currently checking)
     pendingImages: [],      // [{ dataUrl, name }] — base64 data URLs to send
@@ -114,6 +115,7 @@
   function onInitialState(data) {
     state.config = data.config || state.config;
     state.chats = data.chats || [];
+    state.connectors = data.connectors || [];
     state.appVersion = data.appVersion || "";
     state.hardware = data.hardware || null;
     if (state.config) {
@@ -137,6 +139,7 @@
     state.view = name;
     $("#viewChat").classList.toggle("active", name === "chat");
     $("#viewLaunch").classList.toggle("active", name === "launch");
+    $("#viewConnections").classList.toggle("active", name === "connections");
     $("#viewSettings").classList.toggle("active", name === "settings");
     $("#viewReleaseNotes").classList.toggle("active", name === "releaseNotes");
     // Hide sidebar only on settings and its submenus (release notes)
@@ -172,6 +175,86 @@
         showContextMenu(ev.clientX, ev.clientY, c, el);
       });
       list.appendChild(el);
+    });
+  }
+
+  // ---- Connections ----
+  function renderConnections() {
+    const grid = $("#connectionsGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const connectors = state.connectors && state.connectors.length > 0 ? state.connectors : [
+      {
+        id: "filesystem",
+        name: "Filesystem",
+        description: "Full access to your computer. Read, write, delete files, run shell commands, manage registry, environment variables, and processes.",
+        icon: "💻",
+        color: "#6366f1",
+        connected: true,
+      },
+      {
+        id: "github",
+        name: "GitHub",
+        description: "Access your repositories, issues, pull requests, and code. Search repos, create issues, read files, and more.",
+        icon: "🐙",
+        color: "#181717",
+        connected: false,
+      },
+    ];
+
+    connectors.forEach(conn => {
+      const card = document.createElement("div");
+      card.className = "connection-card";
+      card.innerHTML = `
+        <div class="connection-icon" style="background:${conn.color}">${conn.icon}</div>
+        <div class="connection-body">
+          <div class="connection-name">${OllamaMD.escape(conn.name)}</div>
+          <div class="connection-desc">${OllamaMD.escape(conn.description)}</div>
+        </div>
+        <div class="connection-status ${conn.connected ? '' : 'offline'}">
+          <span class="connection-status-dot"></span>
+          ${conn.connected ? 'Connected' : 'Disconnected'}
+        </div>
+      `;
+      card.addEventListener("click", () => {
+        if (conn.id === "github" && !conn.connected) {
+          showGitHubConnectDialog();
+        }
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function showGitHubConnectDialog() {
+    const existing = document.querySelector(".github-connect-dialog");
+    if (existing) existing.remove();
+
+    const dialog = document.createElement("div");
+    dialog.className = "github-connect-dialog";
+    dialog.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:300;";
+    dialog.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:420px;max-width:90vw;">
+        <h3 style="margin:0 0 8px;font-size:16px;color:var(--text);">Connect GitHub</h3>
+        <p style="margin:0 0 16px;font-size:13px;color:var(--text-muted);">Enter your GitHub personal access token to enable repository access.</p>
+        <input type="password" id="githubTokenInput" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text);font-size:13px;margin-bottom:16px;box-sizing:border-box;" />
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="githubCancel" style="padding:8px 16px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface-hover);color:var(--text);font-size:13px;cursor:pointer;">Cancel</button>
+          <button id="githubSave" style="padding:8px 16px;border-radius:var(--radius-md);border:none;background:#6366f1;color:white;font-size:13px;cursor:pointer;">Connect</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelector("#githubCancel").addEventListener("click", () => dialog.remove());
+    dialog.querySelector("#githubSave").addEventListener("click", async () => {
+      const token = dialog.querySelector("#githubTokenInput").value.trim();
+      if (!token) return;
+      await call("saveConfig", { config: { ...state.config, githubToken: token } });
+      state.config.githubToken = token;
+      dialog.remove();
+      renderConnections();
+      toast("GitHub connected");
     });
   }
 
@@ -1659,7 +1742,9 @@
   function bindUI() {
     $("#newChatBtn").addEventListener("click", newChat);
     $("#launchBtn").addEventListener("click", () => showView("launch"));
+    $("#connectionsBtn").addEventListener("click", () => { showView("connections"); renderConnections(); });
     $("#settingsBtn").addEventListener("click", () => { showView("settings"); initSettings(); });
+    $("#backFromConnections").addEventListener("click", () => showView("chat"));
     $("#backFromSettings").addEventListener("click", () => showView("chat"));
     $("#backFromReleaseNotes").addEventListener("click", () => showView("settings"));
     $("#releaseNotesRow").addEventListener("click", () => { showView("releaseNotes"); loadReleaseNotes(); });
