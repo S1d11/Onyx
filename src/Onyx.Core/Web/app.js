@@ -133,14 +133,13 @@
     $("#viewLaunch").classList.toggle("active", name === "launch");
     $("#viewSettings").classList.toggle("active", name === "settings");
     $("#viewReleaseNotes").classList.toggle("active", name === "releaseNotes");
-    // Hide sidebar on settings/launch/release notes views, show on chat
+    // Hide sidebar and menu toggle on settings/launch/release notes views
     const hideSidebar = name !== "chat";
     $("#sidebar").classList.toggle("collapsed", hideSidebar);
-    // Hide the sidebar toggle (menu icon) when not in chat view
     const toggle = $("#sidebarToggle");
-    if (toggle) toggle.classList.toggle("hidden", hideSidebar);
+    if (toggle) toggle.style.display = hideSidebar ? "none" : "";
     if (name === "chat") {
-      // Restore sidebar visibility based on config only if it was visible
+      // Restore sidebar visibility based on config
       if (state.config?.sidebarVisible) $("#sidebar").classList.remove("collapsed");
       $("#promptInput").focus();
     }
