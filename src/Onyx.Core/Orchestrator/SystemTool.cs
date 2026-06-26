@@ -85,7 +85,11 @@ public class SystemTool : ITool
     private async Task<SystemAction?> ParseActionAsync(string userMessage, CancellationToken ct)
     {
         var platform = _system.Platform;
-        var systemPrompt = BuildParserPrompt(platform);
+        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var downloadsDir = Path.Combine(homeDir, "Downloads");
+        var desktopDir = Path.Combine(homeDir, "Desktop");
+        var documentsDir = Path.Combine(homeDir, "Documents");
+        var systemPrompt = BuildParserPrompt(platform, homeDir, downloadsDir, desktopDir, documentsDir);
 
         var messages = new List<ChatMessage>
         {
@@ -116,12 +120,17 @@ public class SystemTool : ITool
         return action;
     }
 
-    private string BuildParserPrompt(string platform) =>
+    private string BuildParserPrompt(string platform, string homeDir, string downloadsDir, string desktopDir, string documentsDir) =>
         "You are a system action parser. The user wants to perform an operation on their " + platform + " computer.\n" +
         "Analyze their request and determine the specific system action to perform.\n" +
         "Respond ONLY with a JSON object — no markdown, no explanation.\n\n" +
+        "USER'S ACTUAL DIRECTORY PATHS (use these EXACT paths — never use placeholders like {user} or ~):\n" +
+        "  Home directory: " + homeDir + "\n" +
+        "  Downloads:      " + downloadsDir + "\n" +
+        "  Desktop:        " + desktopDir + "\n" +
+        "  Documents:      " + documentsDir + "\n\n" +
         "Available actions:\n" +
-        "- \"list_dir\": List directory contents. Params: {\"path\": \"C:\\\\Users\\\\...\"}\n" +
+        "- \"list_dir\": List directory contents. Params: {\"path\": \"" + homeDir.Replace("\\", "\\\\") + "\\\\...\"}\n" +
         "- \"read_file\": Read a file's contents. Params: {\"path\": \"...\"}\n" +
         "- \"write_file\": Write content to a file (destructive). Params: {\"path\": \"...\", \"content\": \"...\"}\n" +
         "- \"delete_file\": Delete a file or directory (destructive). Params: {\"path\": \"...\"}\n" +
@@ -141,13 +150,17 @@ public class SystemTool : ITool
         "- \"processes\": List running processes. Params: {}\n" +
         "- \"kill_process\": Kill a process (destructive). Params: {\"pid\": 1234}\n\n" +
         "Respond with this JSON structure:\n" +
-        "{\"action\":\"read_file\",\"params\":{\"path\":\"C:\\\\Users\\\\example\\\\file.txt\"},\"isDestructive\":false,\"description\":\"Reading file.txt\"}\n\n" +
+        "{\"action\":\"create_dir\",\"params\":{\"path\":\"" + downloadsDir.Replace("\\", "\\\\") + "\\\\hello\"},\"isDestructive\":false,\"description\":\"Create folder hello in Downloads\"}\n\n" +
         "Rules:\n" +
         "- \"action\" must be one of the exact values listed above\n" +
         "- \"params\" contains the action-specific parameters\n" +
         "- \"isDestructive\" is true for: write_file, delete_file, run_command, registry_write, registry_delete, env_set, path_add, kill_process\n" +
         "- \"description\" is a short human-readable summary of what will happen\n" +
-        "- Use absolute paths when possible. If the user gives a relative path, resolve it from the home directory.\n" +
+        "- ALWAYS use the EXACT absolute paths provided above. Never use {user}, %USERPROFILE%, ~, or any placeholder.\n" +
+        "- If the user says 'my downloads', use: " + downloadsDir + "\n" +
+        "- If the user says 'my desktop', use: " + desktopDir + "\n" +
+        "- If the user says 'my documents', use: " + documentsDir + "\n" +
+        "- If the user says 'my home', use: " + homeDir + "\n" +
         "- For shell commands, choose the appropriate shell (cmd for Windows batch, powershell for PowerShell, bash for Unix).\n" +
         "- Platform: " + platform + "\n";
 
@@ -155,6 +168,12 @@ public class SystemTool : ITool
     private async Task<string> ExecuteActionAsync(SystemAction action, CancellationToken ct)
     {
         var p = action.Params ?? new();
+        // Resolve any placeholder paths the LLM might have used
+        if (p.TryGetValue("path", out var pathVal))
+            p["path"] = ResolvePath(pathVal?.ToString() ?? "");
+        if (p.TryGetValue("directory", out var dirVal))
+            p["directory"] = ResolvePath(dirVal?.ToString() ?? "");
+
         var sb = new StringBuilder();
         sb.AppendLine($"Action: {action.Action}");
         sb.AppendLine($"Description: {action.Description}");
@@ -265,6 +284,33 @@ public class SystemTool : ITool
 
     private static int GetInt(Dictionary<string, object> p, string key) =>
         p.TryGetValue(key, out var v) && int.TryParse(v?.ToString(), out var i) ? i : 0;
+
+    /// <summary>Resolve placeholder paths like ~, %USERPROFILE%, {user} to actual absolute paths.</summary>
+    private static string ResolvePath(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return path;
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        // Replace {user}, {username}, %USERPROFILE%, ~
+        path = path
+            .Replace("{user}", home, StringComparison.OrdinalIgnoreCase)
+            .Replace("{username}", home, StringComparison.OrdinalIgnoreCase)
+            .Replace("%USERPROFILE%", home, StringComparison.OrdinalIgnoreCase)
+            .Replace("%userprofile%", home, StringComparison.OrdinalIgnoreCase)
+            .Replace("%HOME%", home, StringComparison.OrdinalIgnoreCase);
+
+        // Replace leading ~ with home directory
+        if (path == "~") path = home;
+        else if (path.StartsWith("~/")) path = Path.Combine(home, path[2..]);
+        else if (path.StartsWith("~\\")) path = Path.Combine(home, path[2..]);
+
+        // Replace common folder name placeholders
+        path = path.Replace("{downloads}", Path.Combine(home, "Downloads"), StringComparison.OrdinalIgnoreCase);
+        path = path.Replace("{desktop}", Path.Combine(home, "Desktop"), StringComparison.OrdinalIgnoreCase);
+        path = path.Replace("{documents}", Path.Combine(home, "Documents"), StringComparison.OrdinalIgnoreCase);
+
+        return path;
+    }
 
     public static ToolDefinition Definition => new()
     {
