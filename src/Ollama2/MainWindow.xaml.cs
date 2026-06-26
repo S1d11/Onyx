@@ -21,7 +21,15 @@ public partial class MainWindow : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        await InitializeWebView();
+        try
+        {
+            await InitializeWebView();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "Failed to initialize WebView2.\n" + ex.Message,
+                "Ollama 2.0", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         _tray = new NotifyIconHelper(this);
     }
 
@@ -37,7 +45,7 @@ public partial class MainWindow : Window
         core.Settings.AreDefaultContextMenusEnabled = true;
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.IsZoomControlEnabled = true;
-        core.Settings.UserAgent = "Ollama2.0/2.2 (Windows; +https://ollama.com)";
+        core.Settings.UserAgent = "Ollama2.0/2.4 (Windows; +https://ollama.com)";
 
         core.WebMessageReceived += OnWebMessageReceived;
         core.NavigationCompleted += (_, _) => _bridge.SendInitialState();
@@ -105,16 +113,14 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        var behavior = App.Current.Config.Current.CloseBehavior;
+        var behavior = App.Current?.Config?.Current?.CloseBehavior ?? "tray";
 
         if (behavior == "quit" || _reallyClose)
         {
-            // Actually quit — clean up tray
             _tray?.Dispose();
             return;
         }
 
-        // "tray" behavior (default): minimize to tray
         e.Cancel = true;
         Hide();
         _tray?.ShowBalloon("Ollama 2.0", "Ollama 2.0 is still running in the background.");

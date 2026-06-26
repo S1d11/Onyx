@@ -11,29 +11,35 @@
   <!-- Sidebar -->
   <aside id="sidebar">
     <div class="sidebar-header">
-      <!-- Ollama logo -->
+      <!-- Ollama llama glyph -->
       <div class="sidebar-logo">
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="white"/>
-          <circle cx="16" cy="14" r="7" fill="#18181B"/>
-          <circle cx="13.5" cy="13" r="1.5" fill="white"/>
-          <circle cx="18.5" cy="13" r="1.5" fill="white"/>
-          <path d="M13 18c1 1.5 3 1.5 4 0" stroke="white" stroke-width="1" fill="none" stroke-linecap="round"/>
-          <ellipse cx="16" cy="22" rx="4" ry="2" fill="#18181B"/>
-          <path d="M10 10c-1-1-2-1-2 0" stroke="white" stroke-width="0.8" fill="none" stroke-linecap="round"/>
-          <path d="M22 10c1-1 2-1 2 0" stroke="white" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+          <rect width="32" height="32" rx="7" fill="#FAFAFA"/>
+          <ellipse cx="16" cy="15" rx="8" ry="7" fill="#18181B"/>
+          <circle cx="13" cy="13.5" r="1.8" fill="#FAFAFA"/>
+          <circle cx="19" cy="13.5" r="1.8" fill="#FAFAFA"/>
+          <path d="M13.5 18.5c1.2 1.8 3.8 1.8 5 0" stroke="#FAFAFA" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M11 10.5c-1.5-1-3-.5-3 .5" stroke="#FAFAFA" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.6"/>
+          <path d="M21 10.5c1.5-1 3-.5 3 .5" stroke="#FAFAFA" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.6"/>
         </svg>
       </div>
       <button id="newChatBtn" class="nav-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 8v4M10 10h4"/>
+        </svg>
         <span>New Chat</span>
       </button>
       <button id="launchBtn" class="nav-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6.11 11.89L12 15z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+          <path d="M12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6.11 11.89L12 15z"/>
+        </svg>
         <span>Launch</span>
       </button>
       <button id="settingsBtn" class="nav-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.72l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.72l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.72l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.72l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.72V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
         <span>Settings</span>
       </button>
     </div>
@@ -47,12 +53,12 @@
     <div id="viewChat" class="chat-area">
       <div id="topbar" style="padding:0 16px;">
         <button class="icon-btn" id="sidebarToggle" title="Toggle sidebar" style="margin-right:auto">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <div class="model-picker">
           <button id="modelBtn" class="model-btn">
             <span id="modelLabel">Select a model</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div id="modelMenu" class="model-menu hidden"></div>
         </div>
@@ -61,14 +67,14 @@
       <div id="emptyState" class="empty-state">
         <div class="empty-logo">
           <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="40" cy="40" r="36" stroke="white" stroke-width="2" fill="none" opacity="0.9"/>
-            <ellipse cx="40" cy="38" rx="18" ry="16" fill="white" opacity="0.9"/>
-            <circle cx="33" cy="35" r="2.5" fill="#18181B"/>
-            <circle cx="47" cy="35" r="2.5" fill="#18181B"/>
-            <path d="M36 44c1.5 2 4.5 2 6 0" stroke="#18181B" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-            <path d="M28 30c-2-2-4-2-5 0" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/>
-            <path d="M52 30c2-2 4-2 5 0" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/>
-            <ellipse cx="40" cy="52" rx="10" ry="5" fill="white" opacity="0.9"/>
+            <circle cx="40" cy="40" r="36" stroke="#FAFAFA" stroke-width="2" fill="none" opacity="0.9"/>
+            <ellipse cx="40" cy="37" rx="20" ry="17" fill="#FAFAFA" opacity="0.9"/>
+            <circle cx="33" cy="34.5" r="2.5" fill="#18181B"/>
+            <circle cx="47" cy="34.5" r="2.5" fill="#18181B"/>
+            <path d="M36 42c1.5 2 4.5 2 6 0" stroke="#18181B" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <path d="M28 28c-2-2-4-2-5 0" stroke="#FAFAFA" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
+            <path d="M52 28c2-2 4-2 5 0" stroke="#FAFAFA" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
+            <ellipse cx="40" cy="52" rx="11" ry="6" fill="#FAFAFA" opacity="0.9"/>
           </svg>
         </div>
       </div>
@@ -76,21 +82,25 @@
         <div class="composer-box">
           <textarea id="promptInput" rows="1" placeholder="Send a message..."></textarea>
           <div class="composer-actions">
-            <button id="attachBtn" class="icon-btn" title="Attach">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <button id="attachBtn" class="icon-btn" title="Attach file">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84L9.41 17.41a2 2 0 0 1-2.83-2.83L15.07 6.1"/>
+              </svg>
             </button>
-            <button id="webSearchToggle" class="icon-btn" title="Web search">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" stroke-linecap="round"/></svg>
+            <button id="webSearchToggle" class="icon-btn" title="Search the web">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
             </button>
             <button id="modelPill" class="model-btn">
               <span id="composerModelLabel">Select</span>
-              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <button id="sendBtn" class="send-btn" title="Send">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            <button id="sendBtn" class="send-btn" title="Send message">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>
             </button>
-            <button id="stopBtn" class="send-btn hidden" title="Stop">
-              <svg viewBox="0 0 24 24" width="16" height="16"><rect x="8" y="8" width="8" height="8" rx="2" fill="currentColor"/></svg>
+            <button id="stopBtn" class="send-btn hidden" title="Stop generation">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
             </button>
           </div>
         </div>
@@ -101,7 +111,7 @@
     <div id="viewLaunch" class="chat-area hidden">
       <div id="topbar">
         <button class="back-btn" id="backFromLaunch">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
         </button>
         <span class="page-title">Launch</span>
       </div>
@@ -118,7 +128,7 @@
     <div id="viewSettings" class="chat-area hidden">
       <div id="topbar">
         <button class="back-btn" id="backFromSettings">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
         </button>
         <span class="page-title">Settings</span>
       </div>
@@ -143,7 +153,9 @@
           <div class="settings-row">
             <div style="display:flex;align-items:center;flex:1">
               <div class="settings-row-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"/><path d="M19 19a7 7 0 1 0-11.95-4.95A5.5 5.5 0 0 0 5 19h14z"/>
+                </svg>
               </div>
               <div class="settings-row-text">
                 <div class="settings-row-title">Cloud</div>
@@ -156,7 +168,9 @@
           <div class="settings-row">
             <div style="display:flex;align-items:center;flex:1">
               <div class="settings-row-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
               </div>
               <div class="settings-row-text">
                 <div class="settings-row-title">Auto-download updates</div>
@@ -172,7 +186,9 @@
           <div class="settings-row">
             <div style="display:flex;align-items:center;flex:1">
               <div class="settings-row-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>
+                </svg>
               </div>
               <div class="settings-row-text">
                 <div class="settings-row-title">Expose Ollama to the network</div>
@@ -185,7 +201,9 @@
           <div class="settings-input-row">
             <div style="display:flex;align-items:center;margin-bottom:4px">
               <div class="settings-row-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
               </div>
               <div class="settings-row-text">
                 <div class="settings-row-title">Model location</div>
@@ -201,15 +219,20 @@
           <div class="settings-slider-row">
             <div style="display:flex;align-items:center;margin-bottom:4px">
               <div class="settings-row-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+                  <path d="M12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6.11 11.89L12 15z"/>
+                </svg>
               </div>
               <div class="settings-row-text">
                 <div class="settings-row-title">Context length <span id="contextValue" style="color:var(--text-muted);font-size:12px;font-weight:400;margin-left:6px">256k</span></div>
                 <div class="settings-row-desc">Context length determines how much of your conversation local LLMs can remember and use to generate responses.</div>
               </div>
             </div>
-            <div class="slider-track" id="contextSliderTrack">
-              <div class="slider-thumb" id="contextSliderThumb" style="right:0%"></div>
+            <div class="slider-wrap" id="contextSliderWrap">
+              <div class="slider-track-bg"></div>
+              <div class="slider-track-fill" id="contextSliderFill"></div>
+              <div class="slider-thumb" id="contextSliderThumb"></div>
             </div>
             <div class="slider-labels">
               <span data-idx="0">4k</span><span data-idx="1">8k</span><span data-idx="2">16k</span><span data-idx="3">32k</span><span data-idx="4">64k</span><span data-idx="5">128k</span><span data-idx="6">256k</span>
@@ -219,7 +242,9 @@
           <div class="settings-row">
             <div style="display:flex;align-items:center;flex:1">
               <div class="settings-row-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M9 3v18"/><path d="M15 3v18"/>
+                </svg>
               </div>
               <div class="settings-row-text">
                 <div class="settings-row-title">Close behavior</div>

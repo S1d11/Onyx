@@ -106,9 +106,9 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        Config.Save();
-        Chats.Save();
-        _mutex?.ReleaseMutex();
+        Config?.Save();
+        Chats?.Save();
+        try { _mutex?.ReleaseMutex(); } catch { }
         _mutex?.Dispose();
         base.OnExit(e);
     }

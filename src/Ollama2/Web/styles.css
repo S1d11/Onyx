@@ -314,22 +314,28 @@ button { cursor: pointer; }
 .settings-input-wrap input[type="text"]:focus { border-color: var(--surface-hover); }
 
 .settings-slider-row { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-.slider-track {
-  position: relative; height: 4px; background: var(--border); border-radius: 2px; margin: 16px 0 8px;
+.slider-wrap {
+  position: relative; height: 20px; margin: 8px 0 4px; cursor: pointer;
 }
-.slider-track::after {
-  content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 100%;
-  background: var(--text); border-radius: 2px;
+.slider-track-bg {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 4px; background: var(--border); border-radius: 2px;
+}
+.slider-track-fill {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  height: 4px; background: var(--text); border-radius: 2px;
+  width: 100%; transition: width 0.08s;
 }
 .slider-thumb {
-  position: absolute; right: -8px; top: 50%; transform: translateY(-50%);
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
   width: 16px; height: 16px; border-radius: 50%; background: var(--text);
-  border: 2px solid var(--bg); box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  cursor: pointer;
+  border: 3px solid var(--bg); box-shadow: 0 1px 6px rgba(0,0,0,0.4);
+  cursor: grab; transition: transform 0.08s;
 }
+.slider-thumb:active { cursor: grabbing; transform: translate(-50%, -50%) scale(1.1); }
 .slider-labels {
   display: flex; justify-content: space-between;
-  font-size: 10px; color: var(--text-muted);
+  font-size: 10px; color: var(--text-muted); margin-top: 2px;
 }
 
 .settings-footer { max-width: 600px; margin: 16px auto 0; display: flex; justify-content: flex-end; }

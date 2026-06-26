@@ -440,48 +440,47 @@
     const currentCtx = cfg.numCtx || 4096;
     let ctxIdx = ctxValues.indexOf(currentCtx);
     if (ctxIdx < 0) ctxIdx = 6;
-    $("#contextValue").textContent = ctxLabels[ctxIdx];
-    updateSliderThumb(ctxIdx);
 
-    const track = $("#contextSliderTrack");
+    const wrap = $("#contextSliderWrap");
+    const fill = $("#contextSliderFill");
     const thumb = $("#contextSliderThumb");
     let dragging = false;
 
-    function updateSliderThumb(idx) {
+    function setSlider(idx) {
       const pct = (idx / (ctxLabels.length - 1)) * 100;
+      fill.style.width = pct + "%";
       thumb.style.left = pct + "%";
-      thumb.style.transform = "translateX(-50%)";
+      $("#contextValue").textContent = ctxLabels[idx];
     }
+    setSlider(ctxIdx);
 
     function snapToIndex(clientX) {
-      const rect = track.getBoundingClientRect();
+      const rect = wrap.getBoundingClientRect();
       const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       const idx = Math.round(x * (ctxLabels.length - 1));
       return Math.max(0, Math.min(ctxLabels.length - 1, idx));
     }
 
-    thumb.onmousedown = (e) => { dragging = true; e.preventDefault(); };
-    track.onmousedown = (e) => {
+    thumb.addEventListener("mousedown", (e) => { dragging = true; e.preventDefault(); });
+    wrap.addEventListener("mousedown", (e) => {
       const idx = snapToIndex(e.clientX);
       ctxIdx = idx;
-      $("#contextValue").textContent = ctxLabels[idx];
-      updateSliderThumb(idx);
+      setSlider(idx);
       if (state.config) { state.config.numCtx = ctxValues[idx]; call("saveConfig", { config: state.config }); }
-    };
-    document.onmousemove = (e) => {
+    });
+    document.addEventListener("mousemove", (e) => {
       if (!dragging) return;
       const idx = snapToIndex(e.clientX);
       ctxIdx = idx;
-      $("#contextValue").textContent = ctxLabels[idx];
-      updateSliderThumb(idx);
-    };
-    document.onmouseup = () => {
+      setSlider(idx);
+    });
+    document.addEventListener("mouseup", () => {
       if (dragging && state.config) {
         state.config.numCtx = ctxValues[ctxIdx];
         call("saveConfig", { config: state.config });
       }
       dragging = false;
-    };
+    });
 
     // Close behavior buttons
     const cb = cfg.closeBehavior || "tray";
