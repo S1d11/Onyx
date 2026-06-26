@@ -57,7 +57,7 @@ button { cursor: pointer; }
   transition: background 0.1s, color 0.1s;
 }
 .sidebar-toggle:hover { background: var(--surface-hover); color: var(--text); }
-.sidebar-toggle svg { width: 16px; height: 16px; }
+.sidebar-toggle svg { width: 18px; height: 18px; }
 
 .sidebar-header { padding: 40px 10px 0; }
 
