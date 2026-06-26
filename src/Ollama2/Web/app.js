@@ -78,7 +78,7 @@
       state.currentModel = state.config.defaultModel;
       $("#composerModelLabel").textContent = state.currentModel || "Select";
       updateComposerModel();
-      if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); }
+      if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); $("#topbar").classList.add("has-toggle"); }
     }
     renderChatList();
     if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
@@ -989,6 +989,7 @@
       sb.classList.toggle("collapsed");
       const isCollapsed = sb.classList.contains("collapsed");
       $("#topbarNewChat").classList.toggle("hidden", !isCollapsed);
+      $("#topbar").classList.toggle("has-toggle", isCollapsed);
     });
     $("#topbarNewChat").addEventListener("click", newChat);
     $("#modelPill").addEventListener("click", (e) => {
@@ -1022,7 +1023,7 @@
     document.addEventListener("keydown", (e) => {
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === "n") { e.preventDefault(); newChat(); }
-      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !$("#sidebar").classList.contains("collapsed")); }
+      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); const col = $("#sidebar").classList.contains("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !col); $("#topbar").classList.toggle("has-toggle", col); }
       else if (e.key === "Escape" && state.streaming) { stopGeneration(); }
     });
   }
