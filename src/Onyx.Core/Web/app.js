@@ -1220,7 +1220,7 @@
 
     // Start minimized toggle
     const minToggle = $("#toggleStartMinimized");
-    minToggle.classList.toggle("on", cfg.startMinimized !== false);
+    minToggle.classList.toggle("on", cfg.startMinimized === true);
     minToggle.onclick = () => {
       const on = minToggle.classList.toggle("on");
       if (state.config) { state.config.startMinimized = on; call("saveConfig", { config: state.config }); }
@@ -1274,7 +1274,7 @@
         temperature: 0.8, topK: 40, topP: 0.9, numCtx: 4096,
         systemPrompt: "", maxSearchResults: 5, closeBehavior: "tray",
         checkUpdatesOnStartup: true, exposeToNetwork: false, modelPath: "", stream: true,
-        effort: "medium", thinkingEnabled: false, startMinimized: true, launchOnStartup: true,
+        effort: "medium", thinkingEnabled: false, startMinimized: false, launchOnStartup: true,
       };
       state.config = { ...state.config, ...defaults };
       call("saveConfig", { config: state.config });
