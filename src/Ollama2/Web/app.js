@@ -672,29 +672,28 @@
   function refreshModels() { return call("listModels").then(m => { state.models = m; renderModelMenu(); updateComposerModel(); if ($("#modelsList")) showManageModelsModal(); }).catch(() => {}); }
 
   const MODEL_LIBRARY = {
-    "llama3.2:1b":   { desc: "Tiny & fast, ideal for quick chat and edge devices",                 size: "1.3 GB", power: 18 },
-    "phi3":          { desc: "Microsoft's compact model with surprisingly strong reasoning",       size: "2.3 GB", power: 30 },
-    "gemma2:2b":     { desc: "Google's ultra-compact model, great for low-latency tasks",           size: "1.6 GB", power: 28 },
-    "qwen2.5:0.5b":  { desc: "Alibaba's ultra-small multilingual model for basic tasks",           size: "0.4 GB", power: 12 },
-    "llama3.2":      { desc: "Meta's lightweight 3B model — excellent speed-to-quality ratio",       size: "2.0 GB", power: 32 },
-    "qwen2.5":       { desc: "Alibaba's capable 7B model with strong multilingual support",         size: "4.7 GB", power: 48 },
-    "mistral":       { desc: "Mistral AI's efficient 7B, top-tier performance for its size",       size: "4.1 GB", power: 50 },
-    "deepseek-r1":   { desc: "Reasoning-specialist model that thinks step-by-step",                size: "4.7 GB", power: 55 },
-    "llama3.1":      { desc: "Meta's best 8B open model, strong across the board",                  size: "4.7 GB", power: 58 },
-    "qwen2.5:32b":   { desc: "Alibaba's 32B powerhouse, excellent reasoning and coding",             size: "18 GB", power: 78 },
-    "mixtral":       { desc: "Mixture-of-experts 47B — very capable, handles complex tasks",       size: "26 GB", power: 82 },
-    "llama3.1:70b":  { desc: "Meta's 70B giant, near-frontier quality for local inference",          size: "40 GB", power: 90 },
-    "qwen2.5:72b":   { desc: "Alibaba's 72B flagship, among the strongest open models",             size: "45 GB", power: 92 },
-    "llama3.1:405b": { desc: "Meta's 405B frontier-class model — maximum power, maximum size",      size: "230 GB", power: 100 },
-    "llava":         { desc: "Vision model that understands images alongside text",                  size: "4.7 GB", power: 35 },
-    "nomic-embed-text":{ desc: "Specialized embedding model for RAG and semantic search",            size: "0.3 GB", power: 8 },
+    "llama3.2:1b":    { desc: "Tiny & fast, ideal for quick chat and edge devices",                 size: "1.3 GB", power: 18,  params: "1.2B", context: "128k", tags: ["Fast"] },
+    "phi3":           { desc: "Microsoft's compact model with surprisingly strong reasoning",       size: "2.3 GB", power: 30,  params: "3.8B", context: "128k", tags: ["Reasoning"] },
+    "gemma2:2b":      { desc: "Google's ultra-compact model, great for low-latency tasks",           size: "1.6 GB", power: 28,  params: "2.6B", context: "8k",   tags: ["Fast"] },
+    "qwen2.5:0.5b":   { desc: "Alibaba's ultra-small multilingual model for basic tasks",           size: "0.4 GB", power: 12,  params: "0.5B", context: "32k",  tags: ["Fast","Multilingual"] },
+    "llama3.2":       { desc: "Meta's lightweight 3B model — excellent speed-to-quality ratio",       size: "2.0 GB", power: 32,  params: "3.2B", context: "128k", tags: ["Fast"] },
+    "qwen2.5":        { desc: "Alibaba's capable 7B model with strong multilingual support",         size: "4.7 GB", power: 48,  params: "7.6B", context: "128k", tags: ["Multilingual"] },
+    "mistral":        { desc: "Mistral AI's efficient 7B, top-tier performance for its size",       size: "4.1 GB", power: 50,  params: "7.3B", context: "128k", tags: ["Efficient"] },
+    "deepseek-r1":    { desc: "Reasoning-specialist model that thinks step-by-step",                size: "4.7 GB", power: 55,  params: "7B",   context: "64k",  tags: ["Reasoning"] },
+    "llama3.1":       { desc: "Meta's best 8B open model, strong across the board",                  size: "4.7 GB", power: 58,  params: "8B",   context: "128k", tags: ["Balanced"] },
+    "qwen2.5:32b":    { desc: "Alibaba's 32B powerhouse, excellent reasoning and coding",             size: "18 GB", power: 78,  params: "32.5B",context: "128k", tags: ["Coding","Multilingual"] },
+    "mixtral":        { desc: "Mixture-of-experts 47B — very capable, handles complex tasks",       size: "26 GB", power: 82,  params: "47B",  context: "32k",  tags: ["MoE","Efficient"] },
+    "llama3.1:70b":   { desc: "Meta's 70B giant, near-frontier quality for local inference",          size: "40 GB", power: 90,  params: "70B",  context: "128k", tags: ["Powerful"] },
+    "qwen2.5:72b":    { desc: "Alibaba's 72B flagship, among the strongest open models",             size: "45 GB", power: 92,  params: "72B",  context: "128k", tags: ["Powerful","Multilingual"] },
+    "llama3.1:405b":  { desc: "Meta's 405B frontier-class model — maximum power, maximum size",      size: "230 GB",power: 100, params: "405B", context: "128k", tags: ["Frontier"] },
+    "llava":          { desc: "Vision model that understands images alongside text",                  size: "4.7 GB", power: 35,  params: "7B",   context: "4k",   tags: ["Vision"] },
+    "nomic-embed-text":{ desc: "Specialized embedding model for RAG and semantic search",            size: "0.3 GB", power: 8,   params: "0.1B", context: "8k",   tags: ["Embedding"] },
   };
 
   function getModelInfo(name) {
     const lower = name.toLowerCase();
     if (MODEL_LIBRARY[lower]) return MODEL_LIBRARY[lower];
-    // Fallback for unknown models
-    return { desc: "Model from Ollama library", size: "", power: 45 };
+    return { desc: "Model from Ollama library", size: "", power: 45, params: "?", context: "?", tags: [] };
   }
 
   function getRecommendedModels() {
@@ -720,13 +719,20 @@
   function buildModelCard(name) {
     const info = getModelInfo(name);
     const powerLabel = info.power < 25 ? "Light" : info.power < 50 ? "Balanced" : info.power < 75 ? "Strong" : "Powerhouse";
+    const tagsHtml = info.tags.map(t => `<span class="rec-tag">${OllamaMD.escape(t)}</span>`).join("");
     return `
       <div class="rec-item" data-name="${OllamaMD.escape(name)}">
         <div class="rec-top">
           <div class="rec-name">${OllamaMD.escape(name)}</div>
-          <div class="rec-meta">${OllamaMD.escape(info.size)} · <span class="rec-power-label">${powerLabel}</span></div>
+          <div class="rec-meta"><span class="rec-power-label">${powerLabel}</span></div>
         </div>
         <div class="rec-desc">${OllamaMD.escape(info.desc)}</div>
+        <div class="rec-specs">
+          <span class="rec-spec"><strong>${OllamaMD.escape(info.params)}</strong> params</span>
+          <span class="rec-spec"><strong>${OllamaMD.escape(info.context)}</strong> context</span>
+          <span class="rec-spec"><strong>${OllamaMD.escape(info.size)}</strong> download</span>
+        </div>
+        ${tagsHtml ? `<div class="rec-tags">${tagsHtml}</div>` : ""}
         <div class="power-bar" title="Power rating: ${info.power}/100">
           <div class="power-bar-track"></div>
           <div class="power-bar-dot" style="left:${info.power}%"></div>
