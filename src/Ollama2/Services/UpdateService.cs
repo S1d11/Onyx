@@ -136,10 +136,11 @@ public class UpdateService
             Process.Start(new ProcessStartInfo
             {
                 FileName = installerPath,
-                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-",
+                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /SP-",
                 UseShellExecute = true,
             });
-            // Exit the current app so the installer can replace the .exe
+            // Give the installer a moment to start, then exit so it can replace the .exe
+            Thread.Sleep(500);
             Environment.Exit(0);
         }
         catch (Exception ex)

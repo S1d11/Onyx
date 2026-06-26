@@ -51,7 +51,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 Name: "{autostartup}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: startup
 
 [Run]
-Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName} now"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName} now"; Flags: nowait postinstall
 
 [UninstallRun]
 ; Kill the running instance (it lives in the tray) before uninstalling.
