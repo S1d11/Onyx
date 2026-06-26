@@ -280,18 +280,53 @@
       menu.appendChild(it);
     });
 
-    // ---- Effort selector ----
+    // ---- Effort submenu row ----
     const sep1 = document.createElement("div"); sep1.className = "mm-sep"; menu.appendChild(sep1);
-    const effortLabel = document.createElement("div");
-    effortLabel.className = "mm-section-label"; effortLabel.textContent = "Effort";
-    menu.appendChild(effortLabel);
+    const effortRow = document.createElement("div"); effortRow.className = "mm-submenu-row";
+    const effLabel = (EFFORT_LEVELS.find(e => e.key === (state.config?.effort || "medium"))?.label) || "Medium";
+    effortRow.innerHTML = `
+      <div class="mm-submenu-label">Effort</div>
+      <div class="mm-submenu-val">${OllamaMD.escape(effLabel)} <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+    `;
+    effortRow.addEventListener("click", () => showEffortSubmenu(menu));
+    menu.appendChild(effortRow);
+
+    // ---- Actions ----
+    const sep2 = document.createElement("div"); sep2.className = "mm-sep"; menu.appendChild(sep2);
+    const pull = document.createElement("div"); pull.className = "mm-action";
+    pull.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Pull a model…</span>`;
+    pull.addEventListener("click", () => { closeModelMenu(); showPullModal(); });
+    menu.appendChild(pull);
+    const manage = document.createElement("div"); manage.className = "mm-action";
+    manage.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.72l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.72l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.72l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.72l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.72V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span>Manage models</span>`;
+    manage.addEventListener("click", () => { closeModelMenu(); showManageModelsModal(); });
+    menu.appendChild(manage);
+
+    positionMenu();
+  }
+
+  function showEffortSubmenu(menu) {
+    menu.innerHTML = "";
+
+    // Header with back arrow
+    const header = document.createElement("div"); header.className = "mm-submenu-header";
+    header.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg><span>Effort</span>`;
+    header.addEventListener("click", renderModelMenu);
+    menu.appendChild(header);
+
+    // Description
+    const desc = document.createElement("div"); desc.className = "mm-submenu-desc";
+    desc.textContent = "Higher effort means more thorough responses, but takes longer and uses your limits faster.";
+    menu.appendChild(desc);
+
+    // Effort levels
     const currentEffort = state.config?.effort || "medium";
     EFFORT_LEVELS.forEach(lvl => {
       const row = document.createElement("div");
       row.className = "mm-effort-row" + (lvl.key === currentEffort ? " selected" : "");
       row.dataset.effort = lvl.key;
       row.innerHTML = `
-        <div class="mm-effort-name">${OllamaMD.escape(lvl.label)}</div>
+        <div class="mm-effort-name">${OllamaMD.escape(lvl.label)}${lvl.key === "medium" ? ' <span class="mm-effort-default">Default</span>' : ""}</div>
         <div class="mm-effort-desc">${OllamaMD.escape(lvl.desc)}</div>
       `;
       row.addEventListener("click", async () => {
@@ -299,20 +334,20 @@
           state.config.effort = lvl.key;
           await call("saveConfig", { config: state.config });
         }
-        renderModelMenu();
+        showEffortSubmenu(menu);
       });
       menu.appendChild(row);
     });
 
-    // ---- Thinking toggle ----
-    const sep2 = document.createElement("div"); sep2.className = "mm-sep"; menu.appendChild(sep2);
+    // Thinking toggle
+    const sep = document.createElement("div"); sep.className = "mm-sep"; menu.appendChild(sep);
     const thinkingOn = state.config?.thinkingEnabled === true;
     const thinkingRow = document.createElement("div");
     thinkingRow.className = "mm-thinking-row";
     thinkingRow.innerHTML = `
       <div class="mm-thinking-left">
         <div class="mm-thinking-title">Thinking</div>
-        <div class="mm-thinking-desc">Can think through complex tasks step-by-step</div>
+        <div class="mm-thinking-desc">Can think for more complex tasks</div>
       </div>
       <div class="toggle ${thinkingOn ? "on" : ""}" id="modelMenuThinking"></div>
     `;
@@ -325,17 +360,25 @@
       await call("saveConfig", { config: state.config });
     });
     menu.appendChild(thinkingRow);
+  }
 
-    // ---- Actions ----
-    const sep3 = document.createElement("div"); sep3.className = "mm-sep"; menu.appendChild(sep3);
-    const pull = document.createElement("div"); pull.className = "mm-action";
-    pull.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Pull a model…</span>`;
-    pull.addEventListener("click", () => { closeModelMenu(); showPullModal(); });
-    menu.appendChild(pull);
-    const manage = document.createElement("div"); manage.className = "mm-action";
-    manage.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.72l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.72l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.72l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.72l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.72V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span>Manage models</span>`;
-    manage.addEventListener("click", () => { closeModelMenu(); showManageModelsModal(); });
-    menu.appendChild(manage);
+  function positionMenu() {
+    const picker = $("#composerModelPicker");
+    const menu = $("#modelMenu");
+    if (!picker || !menu || menu.classList.contains("hidden")) return;
+    const rect = picker.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const spaceAbove = rect.top - 16;
+    menu.style.maxHeight = Math.min(380, Math.max(200, spaceAbove)) + "px";
+    // Ensure menu doesn't go off right edge
+    const vw = window.innerWidth;
+    if (rect.left + 320 > vw) {
+      menu.style.left = "auto";
+      menu.style.right = "0";
+    } else {
+      menu.style.left = "0";
+      menu.style.right = "auto";
+    }
   }
 
   function updateComposerModel() {
@@ -935,8 +978,15 @@
     $("#backFromSettings").addEventListener("click", () => showView("chat"));
 
     $("#sidebarToggle") && $("#sidebarToggle").addEventListener("click", () => $("#sidebar").classList.toggle("collapsed"));
-    $("#modelPill").addEventListener("click", (e) => { e.stopPropagation(); $("#modelMenu").classList.toggle("hidden"); });
+    $("#modelPill").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const menu = $("#modelMenu");
+      const wasHidden = menu.classList.contains("hidden");
+      menu.classList.toggle("hidden");
+      if (wasHidden) { renderModelMenu(); positionMenu(); }
+    });
     document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) closeModelMenu(); });
+    window.addEventListener("resize", () => { positionMenu(); });
 
     $("#webSearchToggle").addEventListener("click", () => {
       $("#webSearchToggle").classList.toggle("active");

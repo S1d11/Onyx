@@ -137,7 +137,10 @@ button { cursor: pointer; }
   overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-xl); padding: 8px; z-index: 50;
   box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+  scrollbar-width: thin;
 }
+.model-menu::-webkit-scrollbar { width: 4px; }
+.model-menu::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .model-item {
   padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer;
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
@@ -163,6 +166,27 @@ button { cursor: pointer; }
 .mm-action:hover { background: var(--surface-hover); color: var(--text); }
 .mm-action svg { width: 14px; height: 14px; flex-shrink: 0; }
 
+/* Submenu row (e.g. Effort) */
+.mm-submenu-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-radius: var(--radius-md); cursor: pointer; transition: background 0.1s;
+}
+.mm-submenu-row:hover { background: var(--surface-hover); }
+.mm-submenu-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.mm-submenu-val { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+.mm-submenu-val svg { color: var(--text-muted); }
+
+/* Submenu header (back button) */
+.mm-submenu-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px 10px; margin: -4px -4px 4px; border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer;
+}
+.mm-submenu-header:hover { color: var(--text-secondary); }
+.mm-submenu-desc {
+  padding: 4px 10px 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.4;
+}
+
 /* Model menu sections */
 .mm-section-label { padding: 6px 10px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .mm-effort-row { padding: 8px 10px; border-radius: var(--radius-md); cursor: pointer; transition: background 0.1s; position: relative; }
@@ -173,6 +197,7 @@ button { cursor: pointer; }
   width: 3px; height: 16px; background: var(--text); border-radius: 0 2px 2px 0;
 }
 .mm-effort-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.mm-effort-default { font-size: 10px; color: var(--text-muted); font-weight: 400; margin-left: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
 .mm-effort-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
 
 .mm-thinking-row {
