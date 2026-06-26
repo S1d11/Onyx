@@ -16,13 +16,13 @@
     appVersion: "",
   };
 
-  let rpcId = 0;
+  let _rpcCounter = 0;
   const pending = new Map();
   function call(action, payload = {}) {
-    const rpcId = "rpc" + (++rpcId);
+    const id = "rpc" + (++_rpcCounter);
     return new Promise((resolve, reject) => {
-      pending.set(rpcId, { resolve, reject });
-      window.chrome.webview.postMessage(JSON.stringify({ _rpcId: rpcId, action, payload }));
+      pending.set(id, { resolve, reject });
+      window.chrome.webview.postMessage(JSON.stringify({ _rpcId: id, action, payload }));
     });
   }
   function emit(action, payload = {}) {
@@ -382,9 +382,19 @@
     }
   }
 
-  function regenerate() {
+  async function regenerate() {
     if (state.streaming) return;
-    const c = state.chats.find(x => x.id === state.currentId);
+    let c = state.chats.find(x => x.id === state.currentId);
+    // If current chat is a draft, persist it first
+    if (!c && state.draftChat && state.draftChat.id === state.currentId) {
+      const persisted = await call("newChat", { model: state.currentModel });
+      persisted.messages = [...state.draftChat.messages];
+      state.chats.unshift(persisted);
+      state.currentId = persisted.id;
+      c = persisted;
+      state.draftChat = null;
+      renderChatList();
+    }
     if (!c) return;
     while (c.messages.length && c.messages[c.messages.length - 1].role === "assistant") c.messages.pop();
     renderMessages(c);

@@ -38,25 +38,33 @@ internal sealed class Bridge
 
     public async void SendInitialState()
     {
-        var cfg = App.Config.Current;
-        var reachable = await App.Ollama.IsReachableAsync();
-        PostToWeb(new
+        try
         {
-            @event = "state",
-            config = cfg,
-            chats = App.Chats.Chats,
-            serverReachable = reachable,
-        });
-
-        // If a background startup update check found a new version, notify the UI
-        if (!string.IsNullOrEmpty(App.PendingUpdatePath))
-        {
+            var cfg = App.Config.Current;
+            var reachable = await App.Ollama.IsReachableAsync();
             PostToWeb(new
             {
-                @event = "updateReady",
-                version = App.PendingUpdateVersion,
-                path = App.PendingUpdatePath,
+                @event = "state",
+                config = cfg,
+                chats = App.Chats.Chats,
+                serverReachable = reachable,
+                appVersion = UpdateService.CurrentVersion.ToString(3),
             });
+
+            // If a background startup update check found a new version, notify the UI
+            if (!string.IsNullOrEmpty(App.PendingUpdatePath))
+            {
+                PostToWeb(new
+                {
+                    @event = "updateReady",
+                    version = App.PendingUpdateVersion,
+                    path = App.PendingUpdatePath,
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            PostToWeb(new { @event = "error", message = "Failed to load initial state: " + ex.Message });
         }
     }
 
@@ -163,19 +171,20 @@ internal sealed class Bridge
 
     private bool HandleStop()
     {
-        _chatCts?.Cancel();
+        try { _chatCts?.Cancel(); } catch { }
         return true;
     }
 
     private bool HandleStopPull()
     {
-        _pullCts?.Cancel();
+        try { _pullCts?.Cancel(); } catch { }
         return true;
     }
 
     private async Task<bool> HandlePull(JsonElement root)
     {
         var name = root.GetProperty("name").GetString()!;
+        try { _pullCts?.Dispose(); } catch { }
         _pullCts = new CancellationTokenSource();
         try
         {
@@ -243,7 +252,7 @@ internal sealed class Bridge
         if ((chat.Title == "New Chat" || string.IsNullOrEmpty(chat.Title)) && messages.FirstOrDefault(x => x.Role == "user")?.Content is { Length: > 0 } firstUser)
             chat.Title = firstUser.Length > 48 ? firstUser.Substring(0, 48) + "…" : firstUser;
 
-        _chatCts?.Cancel();
+        try { _chatCts?.Cancel(); _chatCts?.Dispose(); } catch { }
         _chatCts = new CancellationTokenSource();
         var ct = _chatCts.Token;
 
@@ -369,15 +378,15 @@ internal sealed class Bridge
         return sb.ToString();
     }
 
-    private void ReplyOk(string id, object? data)
+    private void ReplyOk(string rpcId, object? data)
     {
-        if (string.IsNullOrEmpty(id)) return;
-        PostToWeb(new { id, ok = true, data });
+        if (string.IsNullOrEmpty(rpcId)) return;
+        PostToWeb(new { _rpcId = rpcId, ok = true, data });
     }
 
-    private void ReplyError(string id, string message)
+    private void ReplyError(string rpcId, string message)
     {
-        if (string.IsNullOrEmpty(id)) return;
-        PostToWeb(new { id, ok = false, error = message });
+        if (string.IsNullOrEmpty(rpcId)) return;
+        PostToWeb(new { _rpcId = rpcId, ok = false, error = message });
     }
 }
