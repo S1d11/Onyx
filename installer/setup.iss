@@ -43,8 +43,6 @@ Name: "startup"; Description: "Start &automatically when Windows starts"; GroupD
 
 [Files]
 Source: "..\publish\Ollama.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\publish\*.json"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
