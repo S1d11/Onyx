@@ -136,7 +136,9 @@
     // Hide sidebar on settings/launch/release notes views, show on chat
     const hideSidebar = name !== "chat";
     $("#sidebar").classList.toggle("collapsed", hideSidebar);
-    $("#topbarNewChat").classList.toggle("hidden", !hideSidebar && (state.config?.sidebarVisible));
+    // Hide the sidebar toggle (menu icon) when not in chat view
+    const toggle = $("#sidebarToggle");
+    if (toggle) toggle.classList.toggle("hidden", hideSidebar);
     if (name === "chat") {
       // Restore sidebar visibility based on config only if it was visible
       if (state.config?.sidebarVisible) $("#sidebar").classList.remove("collapsed");
