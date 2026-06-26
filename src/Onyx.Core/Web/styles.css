@@ -434,7 +434,7 @@ button { cursor: pointer; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Sources */
-.sources { max-width: var(--content-w); margin: 0 auto; padding: 4px 24px 12px; }
+.sources { max-width: var(--content-w); margin: 0 auto; padding: 4px 0 12px; }
 .sources-header {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px; border-radius: var(--radius-md);
