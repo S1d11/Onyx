@@ -1,13 +1,13 @@
-; Ollama - Inno Setup installer script
-; Build with: ISCC.exe /DAppVersion=1.0.0 installer\setup.iss
+; Ollama 2.0 - Inno Setup installer script
+; Build with: ISCC.exe /DAppVersion=2.0.0 installer\setup.iss
 ; (publish.ps1 -MakeInstaller runs this for you)
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "2.0.0"
 #endif
 
-#define AppName "Ollama"
-#define AppExeName "Ollama.exe"
+#define AppName "Ollama 2.0"
+#define AppExeName "Ollama2.exe"
 #define AppPublisher "Ollama-2.0"
 
 [Setup]
@@ -22,7 +22,7 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 OutputDir=Output
-OutputBaseFilename=OllamaSetup-{#AppVersion}
+OutputBaseFilename=Ollama2Setup-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -42,7 +42,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 Name: "startup"; Description: "Start &automatically when Windows starts"; GroupDescription: "Additional shortcuts:"
 
 [Files]
-Source: "..\publish\Ollama.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\Ollama2.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"

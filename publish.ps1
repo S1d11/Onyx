@@ -8,14 +8,14 @@
 param(
   [switch]$MakeInstaller,
   [string]$Configuration = "Release",
-  [string]$AppVersion = "1.0.0"
+  [string]$AppVersion = "2.0.0"
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $proj = Join-Path $root "src\Ollama2\Ollama2.csproj"
 $publishDir = Join-Path $root "publish"
-$exe = Join-Path $publishDir "Ollama.exe"
+$exe = Join-Path $publishDir "Ollama2.exe"
 
 Write-Host "==> Restoring packages" -ForegroundColor Cyan
 dotnet restore $proj | Out-Null

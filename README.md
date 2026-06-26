@@ -1,4 +1,4 @@
-# Ollama (1:1 desktop clone)
+# Ollama 2.0 (1:1 desktop clone)
 
 A native Windows desktop app that recreates the Ollama app one-to-one: the chat
 interface, model library, settings, all menus, system-tray behavior, and the
@@ -58,7 +58,7 @@ dotnet run --project src\Ollama2\Ollama2.csproj -c Debug
 powershell -ExecutionPolicy Bypass -File publish.ps1
 ```
 
-Produces `publish\Ollama.exe` (~73 MB, no .NET runtime needed on the target).
+Produces `publish\Ollama2.exe` (~73 MB, no .NET runtime needed on the target).
 
 ## Build the `.exe` installer
 
@@ -69,7 +69,7 @@ Produces `publish\Ollama.exe` (~73 MB, no .NET runtime needed on the target).
    powershell -ExecutionPolicy Bypass -File publish.ps1 -MakeInstaller
    ```
 
-   This produces `installer\Output\OllamaSetup-1.0.0.exe` — a standard Windows
+   This produces `installer\Output\Ollama2Setup-2.0.0.exe` — a standard Windows
    installer with Start Menu / desktop / startup shortcuts and a clean
    uninstaller.
 
@@ -98,7 +98,7 @@ Ollama-2.0/
 │  │  └─ Models.cs              # DTOs
 │  └─ Web/                      # chat UI (embedded into the .exe)
 │     ├─ index.html  styles.css  md.js  app.js  manifest.txt
-└─ publish/                     # build output (Ollama.exe)
+└─ publish/                     # build output (Ollama2.exe)
 ```
 
 ## How the web search works

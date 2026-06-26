@@ -44,7 +44,7 @@ public partial class MainWindow : Window
         core.Settings.AreDefaultContextMenusEnabled = true;
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.IsZoomControlEnabled = true;
-        core.Settings.UserAgent = "Ollama/1.0 (Windows; +https://ollama.com)";
+        core.Settings.UserAgent = "Ollama2.0/2.0 (Windows; +https://ollama.com)";
 
         core.WebMessageReceived += OnWebMessageReceived;
         core.NavigationCompleted += (_, _) =>
@@ -118,7 +118,7 @@ public partial class MainWindow : Window
     private void NewChat_Click(object sender, RoutedEventArgs e) =>
         _bridge.PostToWeb(new { @event = "menu", action = "newChat" });
     private void NewWindow_Click(object sender, RoutedEventArgs e) =>
-        new MainWindow { Title = "Ollama" }.Show();
+        new MainWindow { Title = "Ollama 2.0" }.Show();
     private void OpenChat_Click(object sender, RoutedEventArgs e) =>
         _bridge.PostToWeb(new { @event = "menu", action = "openChat" });
     private void ExportChat_Click(object sender, RoutedEventArgs e) =>
@@ -170,8 +170,8 @@ public partial class MainWindow : Window
     private void CheckUpdates_Click(object s, RoutedEventArgs e) =>
         _bridge.PostToWeb(new { @event = "menu", action = "checkUpdates" });
     private void About_Click(object s, RoutedEventArgs e) =>
-        MessageBox.Show(this, "Ollama\nVersion 1.0.0\n\nA 1:1 clone of the Ollama desktop app.\nNative Windows app (WPF + WebView2).\n\nTalks to a local `ollama serve` instance at http://localhost:11434.",
-            "About Ollama", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, "Ollama 2.0\nVersion 2.0.0\n\nA 1:1 clone of the Ollama desktop app.\nNative Windows app (WPF + WebView2).\n\nTalks to a local `ollama serve` instance at http://localhost:11434.",
+            "About Ollama 2.0", MessageBoxButton.OK, MessageBoxImage.Information);
 
     private static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 
@@ -187,7 +187,7 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
             Hide();
-            _tray?.ShowBalloon("Ollama", "Ollama is still running in the background.");
+            _tray?.ShowBalloon("Ollama 2.0", "Ollama 2.0 is still running in the background.");
             return;
         }
         _tray?.Dispose();

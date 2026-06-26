@@ -20,7 +20,7 @@ internal sealed class NotifyIconHelper : IDisposable
         _icon = new NotifyIcon
         {
             Icon = CreateIcon(),
-            Text = "Ollama",
+            Text = "Ollama 2.0",
             Visible = true,
             ContextMenuStrip = BuildMenu(),
         };
@@ -61,7 +61,7 @@ internal sealed class NotifyIconHelper : IDisposable
             "{\"event\":\"menu\",\"action\":\"preferences\"}"));
         menu.Items.Add("-");
         menu.Items.Add("Show Window", null, (_, _) => _owner.BringToFront());
-        menu.Items.Add("Quit Ollama", null, (_, _) => _owner.CloseApp());
+        menu.Items.Add("Quit Ollama 2.0", null, (_, _) => _owner.CloseApp());
         return menu;
     }
 

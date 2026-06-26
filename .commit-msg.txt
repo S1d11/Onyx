@@ -1,0 +1,11 @@
+Rename app to "Ollama 2.0" and bump version to 2.0.0
+
+- Window title, tray icon, About dialog, menus all show "Ollama 2.0"
+- Assembly/exe renamed to Ollama2.exe
+- Web UI <title> updated
+- Installer: AppName="Ollama 2.0", output Ollama2Setup-2.0.0.exe
+- README and publish.ps1 updated
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
