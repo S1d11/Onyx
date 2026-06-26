@@ -14,6 +14,7 @@
     pendingAssistantText: "",
     view: "chat",
     appVersion: "",
+    hardware: null,
   };
 
   let _rpcCounter = 0;
@@ -71,7 +72,8 @@
   function onInitialState(data) {
     state.config = data.config || state.config;
     state.chats = data.chats || [];
-    state.appVersion = data.appVersion || "2.5.4";
+    state.appVersion = data.appVersion || "";
+    state.hardware = data.hardware || null;
     if (state.config) {
       state.currentModel = state.config.defaultModel;
       $("#modelLabel").textContent = state.currentModel || "Select a model";
@@ -669,15 +671,74 @@
 
   function refreshModels() { return call("listModels").then(m => { state.models = m; renderModelMenu(); updateComposerModel(); if ($("#modelsList")) showManageModelsModal(); }).catch(() => {}); }
 
+  function getRecommendedModels() {
+    const hw = state.hardware;
+    const ram = hw?.ramGb || 8;
+    const vram = hw?.gpuVramGb || 0;
+    const hasGpu = vram > 0;
+    const effective = hasGpu ? Math.max(ram * 0.5, vram) : ram * 0.7;
+
+    if (effective < 4) {
+      return [
+        { name: "llama3.2:1b", desc: "Tiny, fast, good for chat on low-end hardware", size: "1.3 GB" },
+        { name: "phi3", desc: "Microsoft's small model, surprisingly capable", size: "2.3 GB" },
+        { name: "qwen2.5:0.5b", desc: "Alibaba's ultra-small multilingual model", size: "0.4 GB" },
+      ];
+    } else if (effective < 8) {
+      return [
+        { name: "llama3.2", desc: "Meta's lightweight model, great balance", size: "2.0 GB" },
+        { name: "gemma2:2b", desc: "Google's compact model, very fast", size: "1.6 GB" },
+        { name: "qwen2.5", desc: "Alibaba's capable multilingual model", size: "4.7 GB" },
+      ];
+    } else if (effective < 16) {
+      return [
+        { name: "llama3.1", desc: "Meta's best open model, 8B parameters", size: "4.7 GB" },
+        { name: "mistral", desc: "Mistral AI's efficient 7B model", size: "4.1 GB" },
+        { name: "deepseek-r1", desc: "Reasoning-focused model", size: "4.7 GB" },
+      ];
+    } else if (effective < 32) {
+      return [
+        { name: "llama3.1:70b", desc: "High-quality large model (requires ~40GB)", size: "40 GB" },
+        { name: "mixtral", desc: "Mixture-of-experts, very capable", size: "26 GB" },
+        { name: "qwen2.5:32b", desc: "Alibaba's 32B model, excellent reasoning", size: "18 GB" },
+      ];
+    } else {
+      return [
+        { name: "llama3.1:405b", desc: "Meta's largest open model (requires ~230GB)", size: "230 GB" },
+        { name: "qwen2.5:72b", desc: "Alibaba's top-tier 72B model", size: "45 GB" },
+        { name: "mixtral", desc: "MoE model, excellent for most tasks", size: "26 GB" },
+      ];
+    }
+  }
+
   function showPullModal() {
     const popular = ["llama3.2", "llama3.2:1b", "qwen2.5", "phi3", "mistral", "gemma2", "deepseek-r1", "llava", "nomic-embed-text"];
+    const hw = state.hardware;
+    const hwText = hw
+      ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Detected: ${hw.cpu} · ${hw.ramGb}GB RAM${hw.gpu ? ` · ${hw.gpu} (${hw.gpuVramGb}GB VRAM)` : ""}</div>`
+      : "";
+    const recs = getRecommendedModels();
+    const recHtml = recs.map(r =>
+      `<div class="rec-item" data-name="${OllamaMD.escape(r.name)}">
+        <div class="rec-name">${OllamaMD.escape(r.name)} <span class="rec-size">${OllamaMD.escape(r.size)}</span></div>
+        <div class="rec-desc">${OllamaMD.escape(r.desc)}</div>
+      </div>`
+    ).join("");
+
     modal(`
       <div class="modal-header">Pull Model <button class="close-btn" id="closeModal">&times;</button></div>
       <div class="modal-body">
+        ${hwText}
         <div class="field"><label>Model name</label><input type="text" id="pullName" placeholder="e.g. llama3.2" list="pullList" style="width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px"/></div>
         <div class="pull-progress"><div class="bar" id="pullBar"></div></div>
         <div id="pullStatus" style="color:var(--text-muted);font-size:13px"></div>
-        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:var(--accent-blue);font-size:13px">Browse the model library ↗</a></div>
+        <div style="margin-top:12px"><label style="font-size:13px;color:var(--text-secondary)">Recommended for your hardware</label>
+          <div class="rec-list">${recHtml}</div>
+        </div>
+        <div style="margin-top:12px"><label style="font-size:13px;color:var(--text-secondary)">Popular models</label>
+          <div class="rec-list">${popular.map(n => `<div class="rec-item" data-name="${OllamaMD.escape(n)}"><div class="rec-name">${OllamaMD.escape(n)}</div></div>`).join("")}</div>
+        </div>
+        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:var(--accent-blue);font-size:13px">Browse the full library ↗</a></div>
       </div>
       <div class="modal-footer"><button class="pill-btn outline" id="cancelPull">Cancel</button><button class="pill-btn primary" id="doPull">Pull</button></div>
     `);
@@ -687,6 +748,11 @@
       $("#doPull").disabled = true; $("#pullStatus").textContent = "Starting…";
       emit("pullModel", { name });
     };
+    $$(".rec-item").forEach(el => {
+      el.addEventListener("click", () => {
+        $("#pullName").value = el.dataset.name;
+      });
+    });
   }
 
   function onPullProgress(msg) {

@@ -134,12 +134,20 @@ internal sealed class Bridge
     {
         var cfg = App.Config.Current;
         var reachable = await App.Ollama.IsReachableAsync();
+        var hw = HardwareDetector.Detect();
         return new
         {
             config = cfg,
             chats = App.Chats.Chats,
             serverReachable = reachable,
             appVersion = UpdateService.CurrentVersion.ToString(3),
+            hardware = new
+            {
+                cpu = hw.CpuName,
+                ramGb = hw.TotalRamGb,
+                gpu = hw.GpuName,
+                gpuVramGb = hw.GpuVramGb,
+            },
         };
     }
 
