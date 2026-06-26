@@ -20,7 +20,7 @@ namespace Ollama2;
 internal sealed class Bridge
 {
     private readonly MainWindow _win;
-    private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = null };
+    private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private CancellationTokenSource? _chatCts;
     private CancellationTokenSource? _pullCts;
     private readonly UpdateService _updater = new();
