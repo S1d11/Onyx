@@ -671,6 +671,32 @@
 
   function refreshModels() { return call("listModels").then(m => { state.models = m; renderModelMenu(); updateComposerModel(); if ($("#modelsList")) showManageModelsModal(); }).catch(() => {}); }
 
+  const MODEL_LIBRARY = {
+    "llama3.2:1b":   { desc: "Tiny & fast, ideal for quick chat and edge devices",                 size: "1.3 GB", power: 18 },
+    "phi3":          { desc: "Microsoft's compact model with surprisingly strong reasoning",       size: "2.3 GB", power: 30 },
+    "gemma2:2b":     { desc: "Google's ultra-compact model, great for low-latency tasks",           size: "1.6 GB", power: 28 },
+    "qwen2.5:0.5b":  { desc: "Alibaba's ultra-small multilingual model for basic tasks",           size: "0.4 GB", power: 12 },
+    "llama3.2":      { desc: "Meta's lightweight 3B model — excellent speed-to-quality ratio",       size: "2.0 GB", power: 32 },
+    "qwen2.5":       { desc: "Alibaba's capable 7B model with strong multilingual support",         size: "4.7 GB", power: 48 },
+    "mistral":       { desc: "Mistral AI's efficient 7B, top-tier performance for its size",       size: "4.1 GB", power: 50 },
+    "deepseek-r1":   { desc: "Reasoning-specialist model that thinks step-by-step",                size: "4.7 GB", power: 55 },
+    "llama3.1":      { desc: "Meta's best 8B open model, strong across the board",                  size: "4.7 GB", power: 58 },
+    "qwen2.5:32b":   { desc: "Alibaba's 32B powerhouse, excellent reasoning and coding",             size: "18 GB", power: 78 },
+    "mixtral":       { desc: "Mixture-of-experts 47B — very capable, handles complex tasks",       size: "26 GB", power: 82 },
+    "llama3.1:70b":  { desc: "Meta's 70B giant, near-frontier quality for local inference",          size: "40 GB", power: 90 },
+    "qwen2.5:72b":   { desc: "Alibaba's 72B flagship, among the strongest open models",             size: "45 GB", power: 92 },
+    "llama3.1:405b": { desc: "Meta's 405B frontier-class model — maximum power, maximum size",      size: "230 GB", power: 100 },
+    "llava":         { desc: "Vision model that understands images alongside text",                  size: "4.7 GB", power: 35 },
+    "nomic-embed-text":{ desc: "Specialized embedding model for RAG and semantic search",            size: "0.3 GB", power: 8 },
+  };
+
+  function getModelInfo(name) {
+    const lower = name.toLowerCase();
+    if (MODEL_LIBRARY[lower]) return MODEL_LIBRARY[lower];
+    // Fallback for unknown models
+    return { desc: "Model from Ollama library", size: "", power: 45 };
+  }
+
   function getRecommendedModels() {
     const hw = state.hardware;
     const ram = hw?.ramGb || 8;
@@ -679,36 +705,33 @@
     const effective = hasGpu ? Math.max(ram * 0.5, vram) : ram * 0.7;
 
     if (effective < 4) {
-      return [
-        { name: "llama3.2:1b", desc: "Tiny, fast, good for chat on low-end hardware", size: "1.3 GB" },
-        { name: "phi3", desc: "Microsoft's small model, surprisingly capable", size: "2.3 GB" },
-        { name: "qwen2.5:0.5b", desc: "Alibaba's ultra-small multilingual model", size: "0.4 GB" },
-      ];
+      return ["llama3.2:1b", "phi3", "qwen2.5:0.5b"];
     } else if (effective < 8) {
-      return [
-        { name: "llama3.2", desc: "Meta's lightweight model, great balance", size: "2.0 GB" },
-        { name: "gemma2:2b", desc: "Google's compact model, very fast", size: "1.6 GB" },
-        { name: "qwen2.5", desc: "Alibaba's capable multilingual model", size: "4.7 GB" },
-      ];
+      return ["llama3.2", "gemma2:2b", "qwen2.5"];
     } else if (effective < 16) {
-      return [
-        { name: "llama3.1", desc: "Meta's best open model, 8B parameters", size: "4.7 GB" },
-        { name: "mistral", desc: "Mistral AI's efficient 7B model", size: "4.1 GB" },
-        { name: "deepseek-r1", desc: "Reasoning-focused model", size: "4.7 GB" },
-      ];
+      return ["llama3.1", "mistral", "deepseek-r1"];
     } else if (effective < 32) {
-      return [
-        { name: "llama3.1:70b", desc: "High-quality large model (requires ~40GB)", size: "40 GB" },
-        { name: "mixtral", desc: "Mixture-of-experts, very capable", size: "26 GB" },
-        { name: "qwen2.5:32b", desc: "Alibaba's 32B model, excellent reasoning", size: "18 GB" },
-      ];
+      return ["llama3.1:70b", "mixtral", "qwen2.5:32b"];
     } else {
-      return [
-        { name: "llama3.1:405b", desc: "Meta's largest open model (requires ~230GB)", size: "230 GB" },
-        { name: "qwen2.5:72b", desc: "Alibaba's top-tier 72B model", size: "45 GB" },
-        { name: "mixtral", desc: "MoE model, excellent for most tasks", size: "26 GB" },
-      ];
+      return ["llama3.1:405b", "qwen2.5:72b", "mixtral"];
     }
+  }
+
+  function buildModelCard(name) {
+    const info = getModelInfo(name);
+    const powerLabel = info.power < 25 ? "Light" : info.power < 50 ? "Balanced" : info.power < 75 ? "Strong" : "Powerhouse";
+    return `
+      <div class="rec-item" data-name="${OllamaMD.escape(name)}">
+        <div class="rec-top">
+          <div class="rec-name">${OllamaMD.escape(name)}</div>
+          <div class="rec-meta">${OllamaMD.escape(info.size)} · <span class="rec-power-label">${powerLabel}</span></div>
+        </div>
+        <div class="rec-desc">${OllamaMD.escape(info.desc)}</div>
+        <div class="power-bar" title="Power rating: ${info.power}/100">
+          <div class="power-bar-track"></div>
+          <div class="power-bar-dot" style="left:${info.power}%"></div>
+        </div>
+      </div>`;
   }
 
   function showPullModal() {
@@ -717,13 +740,9 @@
     const hwText = hw
       ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Detected: ${hw.cpu} · ${hw.ramGb}GB RAM${hw.gpu ? ` · ${hw.gpu} (${hw.gpuVramGb}GB VRAM)` : ""}</div>`
       : "";
-    const recs = getRecommendedModels();
-    const recHtml = recs.map(r =>
-      `<div class="rec-item" data-name="${OllamaMD.escape(r.name)}">
-        <div class="rec-name">${OllamaMD.escape(r.name)} <span class="rec-size">${OllamaMD.escape(r.size)}</span></div>
-        <div class="rec-desc">${OllamaMD.escape(r.desc)}</div>
-      </div>`
-    ).join("");
+    const recNames = getRecommendedModels();
+    const recHtml = recNames.map(buildModelCard).join("");
+    const popHtml = popular.map(buildModelCard).join("");
 
     modal(`
       <div class="modal-header">Pull Model <button class="close-btn" id="closeModal">&times;</button></div>
@@ -736,7 +755,7 @@
           <div class="rec-list">${recHtml}</div>
         </div>
         <div style="margin-top:12px"><label style="font-size:13px;color:var(--text-secondary)">Popular models</label>
-          <div class="rec-list">${popular.map(n => `<div class="rec-item" data-name="${OllamaMD.escape(n)}"><div class="rec-name">${OllamaMD.escape(n)}</div></div>`).join("")}</div>
+          <div class="rec-list">${popHtml}</div>
         </div>
         <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:var(--accent-blue);font-size:13px">Browse the full library ↗</a></div>
       </div>

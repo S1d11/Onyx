@@ -396,15 +396,30 @@ button { cursor: pointer; }
 .kv-row .kv-val { color: var(--text-muted); font-size: 12px; }
 .pull-progress { height: 4px; background: var(--surface-hover); border-radius: 4px; overflow: hidden; margin: 8px 0; }
 .pull-progress .bar { height: 100%; background: var(--text); width: 0; transition: width 0.2s; }
-.rec-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.rec-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .rec-item {
-  padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--border);
+  padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid var(--border);
   cursor: pointer; transition: background 0.1s, border-color 0.1s;
 }
 .rec-item:hover { background: var(--surface-hover); border-color: var(--text-muted); }
+.rec-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .rec-name { font-size: 13px; font-weight: 500; color: var(--text); }
-.rec-size { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
-.rec-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.rec-meta { font-size: 11px; color: var(--text-muted); font-weight: 400; white-space: nowrap; }
+.rec-power-label { color: var(--text-secondary); }
+.rec-desc { font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+
+/* Power bar */
+.power-bar { position: relative; height: 6px; margin-top: 8px; }
+.power-bar-track {
+  position: absolute; inset: 0; border-radius: 3px;
+  background: linear-gradient(90deg, #22c55e, #eab308, #f97316, #a855f7);
+}
+.power-bar-dot {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 10px; height: 10px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5); border: 1px solid rgba(0,0,0,0.3);
+}
+
 .shortcut-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
 .shortcut-row kbd { background: var(--surface-hover); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; font-family: var(--font-mono); font-size: 12px; }
 
