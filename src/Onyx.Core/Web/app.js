@@ -133,13 +133,12 @@
     $("#viewLaunch").classList.toggle("active", name === "launch");
     $("#viewSettings").classList.toggle("active", name === "settings");
     $("#viewReleaseNotes").classList.toggle("active", name === "releaseNotes");
-    // Hide sidebar and menu toggle on settings/launch/release notes views
-    const hideSidebar = name !== "chat";
+    // Hide sidebar only on settings view
+    const hideSidebar = name === "settings";
     $("#sidebar").classList.toggle("collapsed", hideSidebar);
     const toggle = $("#sidebarToggle");
     if (toggle) toggle.style.display = hideSidebar ? "none" : "";
     if (name === "chat") {
-      // Restore sidebar visibility based on config
       if (state.config?.sidebarVisible) $("#sidebar").classList.remove("collapsed");
       $("#promptInput").focus();
     }
@@ -1551,7 +1550,6 @@
     $("#newChatBtn").addEventListener("click", newChat);
     $("#launchBtn").addEventListener("click", () => showView("launch"));
     $("#settingsBtn").addEventListener("click", () => { showView("settings"); initSettings(); });
-    $("#backFromLaunch").addEventListener("click", () => showView("chat"));
     $("#backFromSettings").addEventListener("click", () => showView("chat"));
     $("#backFromReleaseNotes").addEventListener("click", () => showView("settings"));
     $("#releaseNotesRow").addEventListener("click", () => { showView("releaseNotes"); loadReleaseNotes(); });
