@@ -116,22 +116,30 @@ public class IntentExtractor
     /// <summary>The system prompt that instructs the LLM to act as an intent classifier.</summary>
     private string BuildSystemPrompt(string toolList)
     {
-        return "You are an intent extraction system. Analyze the user's message and determine their intent.\n" +
+        return "You are an intent extraction system for a desktop AI assistant that HAS FULL ACCESS to the user's computer.\n" +
+               "Analyze the user's message and determine their intent.\n" +
                "Respond ONLY with a JSON object — no markdown, no explanation, no code fences.\n\n" +
                "Available intent types:\n" +
-               "- \"chat\": General conversation, Q&A, explanations, opinions\n" +
-               "- \"code\": Writing, debugging, refactoring, or explaining code\n" +
-               "- \"webSearch\": Needs current/real-time information from the web\n" +
-               "- \"reasoning\": Mathematical, logical, or analytical problem-solving\n" +
-               "- \"creative\": Creative writing, brainstorming, ideation, stories\n" +
-               "- \"summarize\": Summarizing or condensing text\n" +
-               "- \"translate\": Translating between languages\n" +
-               "- \"toolUse\": A specific tool or external action is needed\n\n" +
+               "- \"chat\": General conversation, Q&A, explanations, opinions. The user wants YOU to talk or explain.\n" +
+               "- \"code\": Writing, debugging, refactoring, or explaining code. The user wants code snippets or programming help.\n" +
+               "- \"webSearch\": Needs current/real-time information from the web.\n" +
+               "- \"reasoning\": Mathematical, logical, or analytical problem-solving.\n" +
+               "- \"creative\": Creative writing, brainstorming, ideation, stories.\n" +
+               "- \"summarize\": Summarizing or condensing text.\n" +
+               "- \"translate\": Translating between languages.\n" +
+               "- \"toolUse\": The user wants to DO something on their computer — not just talk about it.\n\n" +
                "Available tools:\n" + toolList + "\n\n" +
+               "CRITICAL RULES FOR CLASSIFICATION:\n" +
+               "- If the user wants to PERFORM an action on their computer (create/read/write/delete files, run commands, check system info, manage processes, modify registry/env, browse directories), classify as \"toolUse\" with targetTool \"system\" and shouldExecuteTools=true.\n" +
+               "- If the user says \"make\", \"create\", \"delete\", \"list\", \"show me\", \"find\", \"run\", \"execute\", \"check\", \"read\", \"write\" followed by a file/directory/program/system reference, this is \"toolUse\" with targetTool \"system\".\n" +
+               "- If the user is asking a QUESTION that could be answered with general knowledge, classify as \"chat\".\n" +
+               "- If the user wants code to COPY and run themselves, classify as \"code\".\n" +
+               "- If the user wants YOU to run something on their computer, classify as \"toolUse\" with targetTool \"system\".\n" +
+               "- When in doubt about whether to use the system tool, prefer \"toolUse\" with targetTool \"system\" — the user will see a confirmation dialog for destructive actions.\n\n" +
                "Analyze the SEMANTIC MEANING of the message — what the user is trying to accomplish — not just keywords.\n" +
                "Consider the full context of the conversation if provided.\n\n" +
                "Respond with this exact JSON structure:\n" +
-               "{\"intent\":\"chat\",\"confidence\":0.95,\"summary\":\"what the user wants\",\"entities\":[\"topic1\",\"topic2\"],\"language\":\"en\",\"targetTool\":null,\"suggestedTools\":[\"webSearch\"],\"shouldExecuteTools\":true}\n\n" +
+               "{\"intent\":\"toolUse\",\"confidence\":0.95,\"summary\":\"Create empty file named hello in Downloads\",\"entities\":[\"file\",\"hello\",\"Downloads\"],\"language\":\"en\",\"targetTool\":\"system\",\"suggestedTools\":[\"system\"],\"shouldExecuteTools\":true}\n\n" +
                "Rules:\n" +
                "- \"intent\" must be one of the exact values listed above\n" +
                "- \"confidence\" is 0.0 to 1.0 — how sure you are\n" +
@@ -140,7 +148,8 @@ public class IntentExtractor
                "- \"language\" is the ISO code of the detected language\n" +
                "- \"targetTool\" is the tool name if intent is \"toolUse\", otherwise null\n" +
                "- \"suggestedTools\" lists tools that would help answer this (can be empty)\n" +
-               "- \"shouldExecuteTools\" is true if tools should run automatically before generating the answer\n";
+               "- \"shouldExecuteTools\" is true if tools should run automatically before generating the answer\n" +
+               "- For system actions, ALWAYS set shouldExecuteTools to true so the action actually runs\n";
     }
 
     /// <summary>Build a description of available tools for the classifier prompt.</summary>

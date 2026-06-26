@@ -164,14 +164,22 @@ public class OrchestratorService
         if (intent.Type == IntentType.Code && _tools.IsAvailable("codeExecutor"))
             tools.AddIfMissing("codeExecutor");
 
+        // ToolUse intent: route to the specified tool
         if (intent.Type == IntentType.ToolUse && !string.IsNullOrEmpty(intent.TargetTool))
         {
             if (_tools.IsAvailable(intent.TargetTool!))
                 tools.AddIfMissing(intent.TargetTool!);
         }
 
-        // Only auto-execute if the intent says so
-        if (!intent.ShouldExecuteTools)
+        // Safety net: if the LLM said toolUse but didn't specify a target tool,
+        // and the system tool is available, default to it
+        if (intent.Type == IntentType.ToolUse && string.IsNullOrEmpty(intent.TargetTool) && _tools.IsAvailable("system"))
+            tools.AddIfMissing("system");
+
+        // Only auto-execute if the intent says so.
+        // BUT: if the intent is explicitly toolUse with a target tool, always execute
+        // (the LLM was confident enough to name a specific tool)
+        if (!intent.ShouldExecuteTools && intent.Type != IntentType.ToolUse)
             tools.Clear();
 
         return tools;
