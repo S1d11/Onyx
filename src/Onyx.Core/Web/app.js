@@ -133,8 +133,8 @@
     $("#viewLaunch").classList.toggle("active", name === "launch");
     $("#viewSettings").classList.toggle("active", name === "settings");
     $("#viewReleaseNotes").classList.toggle("active", name === "releaseNotes");
-    // Hide sidebar only on settings view
-    const hideSidebar = name === "settings";
+    // Hide sidebar only on settings and its submenus (release notes)
+    const hideSidebar = name === "settings" || name === "releaseNotes";
     $("#sidebar").classList.toggle("collapsed", hideSidebar);
     const toggle = $("#sidebarToggle");
     if (toggle) toggle.style.display = hideSidebar ? "none" : "";
