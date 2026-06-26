@@ -51,6 +51,7 @@
       case "pullCancelled": onPullCancelled(msg); break;
       case "pullError": toast("Pull failed: " + msg.message); break;
       case "updateStatus": onUpdateStatus(msg); break;
+      case "updateReady": onUpdateReady(msg); break;
       case "error": toast(msg.message); break;
     }
   }
@@ -581,6 +582,32 @@
     } else {
       toast(msg.status);
     }
+  }
+
+  function onUpdateReady(msg) {
+    showUpdateBanner(msg.version, msg.path);
+  }
+
+  function showUpdateBanner(version, path) {
+    let banner = $("#updateBanner");
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "updateBanner";
+      banner.style.cssText = "position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:150;background:#27272A;border:1px solid #3F3F46;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4)";
+      document.body.appendChild(banner);
+    }
+    banner.innerHTML = `
+      <span style="font-size:13px;color:#FAFAFA">${OllamaMD.escape(version)} is ready to install</span>
+      <button class="pill-btn primary" id="installUpdateBtn" style="font-size:12px;padding:5px 12px">Install now</button>
+      <button id="dismissUpdateBtn" style="color:#71717A;font-size:18px;padding:2px 6px;background:none;border-radius:4px">&times;</button>
+    `;
+    banner.style.display = "flex";
+    $("#installUpdateBtn").onclick = async () => {
+      if (confirm(`Install ${OllamaMD.escape(version)} now? The app will restart.`)) {
+        await call("installUpdate", { path });
+      }
+    };
+    $("#dismissUpdateBtn").onclick = () => { banner.style.display = "none"; };
   }
 
   function modal(html) {

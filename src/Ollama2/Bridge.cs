@@ -47,6 +47,17 @@ internal sealed class Bridge
             chats = App.Chats.Chats,
             serverReachable = reachable,
         });
+
+        // If a background startup update check found a new version, notify the UI
+        if (!string.IsNullOrEmpty(App.PendingUpdatePath))
+        {
+            PostToWeb(new
+            {
+                @event = "updateReady",
+                version = App.PendingUpdateVersion,
+                path = App.PendingUpdatePath,
+            });
+        }
     }
 
     public async Task RefreshModelsAsync()

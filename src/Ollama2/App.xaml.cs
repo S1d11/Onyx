@@ -19,6 +19,10 @@ public partial class App : Application
     public WebSearchService WebSearch { get; private set; } = null!;
     public ChatStore Chats { get; private set; } = null!;
 
+    /// <summary>Populated by the background startup update check. UI is notified via Bridge.</summary>
+    public static string? PendingUpdatePath { get; set; }
+    public static string? PendingUpdateVersion { get; set; }
+
     public static string DataDir { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ollama2");
 
@@ -70,8 +74,8 @@ public partial class App : Application
                         var path = await updater.DownloadUpdateAsync(release);
                         if (!string.IsNullOrEmpty(path))
                         {
-                            // Show a native notification or just log — the UI isn't ready yet
-                            // The user will see the downloaded file next time they check
+                            PendingUpdatePath = path;
+                            PendingUpdateVersion = release.TagName;
                         }
                     }
                 }
