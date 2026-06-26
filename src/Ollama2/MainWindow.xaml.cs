@@ -37,7 +37,7 @@ public partial class MainWindow : Window
         core.Settings.AreDefaultContextMenusEnabled = true;
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.IsZoomControlEnabled = true;
-        core.Settings.UserAgent = "Ollama2.0/2.1 (Windows; +https://ollama.com)";
+        core.Settings.UserAgent = "Ollama2.0/2.2 (Windows; +https://ollama.com)";
 
         core.WebMessageReceived += OnWebMessageReceived;
         core.NavigationCompleted += (_, _) => _bridge.SendInitialState();
@@ -97,7 +97,7 @@ public partial class MainWindow : Window
 
     public void SetZoom(double z) => Dispatcher.Invoke(() => WebView.ZoomFactor = z);
 
-    // ---- Tray / Close behavior (minimize to tray like the real Ollama app) ----
+    // ---- Tray / Close behavior ----
     private void Window_StateChanged(object? sender, EventArgs e)
     {
         if (WindowState == WindowState.Minimized) Hide();
@@ -105,14 +105,19 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (!_reallyClose)
+        var behavior = App.Current.Config.Current.CloseBehavior;
+
+        if (behavior == "quit" || _reallyClose)
         {
-            e.Cancel = true;
-            Hide();
-            _tray?.ShowBalloon("Ollama 2.0", "Ollama 2.0 is still running in the background.");
+            // Actually quit — clean up tray
+            _tray?.Dispose();
             return;
         }
-        _tray?.Dispose();
+
+        // "tray" behavior (default): minimize to tray
+        e.Cancel = true;
+        Hide();
+        _tray?.ShowBalloon("Ollama 2.0", "Ollama 2.0 is still running in the background.");
     }
 
     public void CloseApp()

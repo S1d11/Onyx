@@ -19,6 +19,7 @@ public class AppConfig
     public int MaxSearchResults { get; set; } = 5;
     public string WebSearchProvider { get; set; } = "duckduckgo";
     public string? WebSearchApiKey { get; set; }
+    public string CloseBehavior { get; set; } = "tray"; // "quit" or "tray"
     public bool Stream { get; set; } = true;
 }
 

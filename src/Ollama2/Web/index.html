@@ -45,7 +45,10 @@
   <main id="main">
     <!-- Chat View -->
     <div id="viewChat" class="chat-area">
-      <div id="topbar" style="justify-content:flex-end; padding-right:20px;">
+      <div id="topbar" style="padding:0 16px;">
+        <button class="icon-btn" id="sidebarToggle" title="Toggle sidebar" style="margin-right:auto">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
         <div class="model-picker">
           <button id="modelBtn" class="model-btn">
             <span id="modelLabel">Select a model</span>
@@ -207,6 +210,22 @@
             </div>
             <div class="slider-labels">
               <span>4k</span><span>8k</span><span>16k</span><span>32k</span><span>64k</span><span>128k</span><span>256k</span>
+            </div>
+          </div>
+          <!-- Close behavior -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Close behavior</div>
+                <div class="settings-row-desc">What happens when you close the window.</div>
+              </div>
+            </div>
+            <div class="close-behavior-options" id="closeBehaviorOptions">
+              <button class="pill-btn outline" data-val="tray" id="cbTray">Keep running</button>
+              <button class="pill-btn outline" data-val="quit" id="cbQuit">Quit</button>
             </div>
           </div>
         </div>

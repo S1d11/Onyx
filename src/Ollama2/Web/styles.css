@@ -334,6 +334,10 @@ button { cursor: pointer; }
 
 .settings-footer { max-width: 600px; margin: 16px auto 0; display: flex; justify-content: flex-end; }
 
+.close-behavior-options { display: flex; gap: 8px; }
+.close-behavior-options .pill-btn { padding: 6px 14px; font-size: 12px; }
+.close-behavior-options .pill-btn.selected { background: var(--text); color: var(--bg); border-color: var(--text); }
+
 /* ===== Modal ===== */
 #modalRoot { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; visibility: hidden; opacity: 0; transition: opacity 0.15s; }
 #modalRoot.visible { visibility: visible; opacity: 1; }

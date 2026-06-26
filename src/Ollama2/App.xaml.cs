@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using Ollama2.Services;
 
@@ -7,6 +9,9 @@ namespace Ollama2;
 
 public partial class App : Application
 {
+    private static Mutex? _mutex;
+    private const string MutexName = "Ollama2.0-SingleInstance-Mutex-v1";
+
     public static new App Current => (App)Application.Current;
 
     public ConfigService Config { get; private set; } = null!;
@@ -17,8 +22,31 @@ public partial class App : Application
     public static string DataDir { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ollama2");
 
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(nint hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(nint hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(nint hWnd);
+
+    private const int SW_RESTORE = 9;
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Single-instance check
+        _mutex = new Mutex(true, MutexName, out bool createdNew);
+        if (!createdNew)
+        {
+            // Another instance is running — bring it to front and exit
+            BringExistingToFront();
+            _mutex.Dispose();
+            _mutex = null;
+            Shutdown();
+            return;
+        }
+
         base.OnStartup(e);
         Directory.CreateDirectory(DataDir);
         Config = new ConfigService(Path.Combine(DataDir, "config.json"));
@@ -29,10 +57,32 @@ public partial class App : Application
         Chats.Load();
     }
 
+    private static void BringExistingToFront()
+    {
+        try
+        {
+            // Find the existing Ollama2 process that isn't this one
+            var currentId = Environment.ProcessId;
+            foreach (var proc in System.Diagnostics.Process.GetProcessesByName("Ollama2"))
+            {
+                if (proc.Id == currentId) continue;
+                if (proc.MainWindowHandle == nint.Zero) continue;
+
+                if (IsIconic(proc.MainWindowHandle))
+                    ShowWindow(proc.MainWindowHandle, SW_RESTORE);
+                SetForegroundWindow(proc.MainWindowHandle);
+                break;
+            }
+        }
+        catch { /* best effort */ }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         Config.Save();
         Chats.Save();
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
         base.OnExit(e);
     }
 }

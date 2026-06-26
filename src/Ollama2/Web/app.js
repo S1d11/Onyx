@@ -376,9 +376,31 @@
       t.addEventListener("click", () => { t.classList.toggle("on"); });
     });
 
+    // Close behavior buttons
+    const cb = state.config?.closeBehavior || "tray";
+    $$("#closeBehaviorOptions .pill-btn").forEach(btn => btn.classList.remove("selected"));
+    const activeBtn = $(`#closeBehaviorOptions [data-val="${cb}"]`);
+    if (activeBtn) activeBtn.classList.add("selected");
+
+    $$("#closeBehaviorOptions .pill-btn").forEach(btn => {
+      btn.onclick = () => {
+        $$("#closeBehaviorOptions .pill-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        const val = btn.dataset.val;
+        if (state.config) { state.config.closeBehavior = val; call("saveConfig", { config: state.config }); }
+        toast(val === "tray" ? "App will keep running in the background when closed" : "App will quit when closed");
+      };
+    });
+
     $("#browseModelPath").addEventListener("click", () => toast("Browse dialog would open here"));
     $("#resetDefaults").addEventListener("click", () => {
       $$(".toggle").forEach(t => t.classList.add("on"));
+      $$("#closeBehaviorOptions .pill-btn").forEach(b => b.classList.remove("selected"));
+      $("#cbTray").classList.add("selected");
+      if (state.config) {
+        state.config.closeBehavior = "tray";
+        call("saveConfig", { config: state.config });
+      }
       toast("Settings reset to defaults");
     });
   }
