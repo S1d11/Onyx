@@ -53,18 +53,40 @@
       <div id="emptyState" class="empty-state">
         <div class="empty-logo">
           <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Onyx gem: hexagonal crystal with characteristic banding -->
-            <path d="M32 4 L56 18 L56 46 L32 60 L8 46 L8 18 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            <!-- Top facet -->
-            <path d="M32 4 L32 22 L8 18 Z" stroke="currentColor" stroke-width="1.2" opacity="0.5" stroke-linejoin="round"/>
-            <path d="M32 4 L32 22 L56 18 Z" stroke="currentColor" stroke-width="1.2" opacity="0.35" stroke-linejoin="round"/>
-            <!-- Banding (the hallmark of onyx) -->
-            <path d="M14 28 L50 28" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
-            <path d="M12 36 L52 36" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-            <path d="M14 44 L50 44" stroke="currentColor" stroke-width="1.5" opacity="0.25"/>
-            <!-- Bottom facet -->
-            <path d="M32 22 L8 18 L8 46 L32 60 Z" stroke="currentColor" stroke-width="1" opacity="0.15" stroke-linejoin="round"/>
-            <path d="M32 22 L56 18 L56 46 L32 60 Z" stroke="currentColor" stroke-width="1" opacity="0.1" stroke-linejoin="round"/>
+            <!-- Onyx gem: detailed hexagonal crystal with realistic facets and banding -->
+            <!-- Outer crystal outline -->
+            <path d="M32 4 L56 18 L56 46 L32 60 L8 46 L8 18 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- Top-left facet -->
+            <path d="M32 4 L8 18 L32 22 Z" stroke="currentColor" stroke-width="1.2" opacity="0.55" stroke-linejoin="round" fill="currentColor" fill-opacity="0.04"/>
+            <!-- Top-right facet -->
+            <path d="M32 4 L56 18 L32 22 Z" stroke="currentColor" stroke-width="1.2" opacity="0.4" stroke-linejoin="round" fill="currentColor" fill-opacity="0.02"/>
+            <!-- Center horizontal divider -->
+            <path d="M8 18 L32 22 L56 18" stroke="currentColor" stroke-width="1.5" opacity="0.6" stroke-linejoin="round"/>
+            <!-- Left mid facet -->
+            <path d="M8 18 L32 22 L32 42 L8 46 Z" stroke="currentColor" stroke-width="1" opacity="0.2" stroke-linejoin="round" fill="currentColor" fill-opacity="0.03"/>
+            <!-- Right mid facet -->
+            <path d="M56 18 L32 22 L32 42 L56 46 Z" stroke="currentColor" stroke-width="1" opacity="0.15" stroke-linejoin="round" fill="currentColor" fill-opacity="0.015"/>
+            <!-- Banding layer 1 (prominent) -->
+            <path d="M12 28 L52 28" stroke="currentColor" stroke-width="2" opacity="0.6"/>
+            <!-- Banding layer 2 -->
+            <path d="M11 32 L53 32" stroke="currentColor" stroke-width="1.2" opacity="0.35"/>
+            <!-- Banding layer 3 (prominent) -->
+            <path d="M12 36 L52 36" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+            <!-- Banding layer 4 -->
+            <path d="M13 40 L51 40" stroke="currentColor" stroke-width="1.2" opacity="0.3"/>
+            <!-- Banding layer 5 -->
+            <path d="M14 44 L50 44" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
+            <!-- Center vertical facet line -->
+            <path d="M32 22 L32 42" stroke="currentColor" stroke-width="1" opacity="0.25"/>
+            <!-- Bottom-left facet -->
+            <path d="M8 46 L32 42 L32 60 Z" stroke="currentColor" stroke-width="1" opacity="0.15" stroke-linejoin="round" fill="currentColor" fill-opacity="0.02"/>
+            <!-- Bottom-right facet -->
+            <path d="M56 46 L32 42 L32 60 Z" stroke="currentColor" stroke-width="1" opacity="0.1" stroke-linejoin="round" fill="currentColor" fill-opacity="0.01"/>
+            <!-- Subtle inner highlight (light reflection) -->
+            <path d="M28 8 L36 8" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+            <!-- Sparkle accent -->
+            <circle cx="40" cy="14" r="0.8" fill="currentColor" opacity="0.5"/>
+            <circle cx="22" cy="50" r="0.6" fill="currentColor" opacity="0.3"/>
           </svg>
         </div>
         <div class="empty-welcome">How can I help you today?</div>
@@ -116,7 +138,6 @@
       </div>
       <div class="page-content">
         <div class="page-header">
-          <h1>Launch</h1>
           <p>Copy a command and run it in your terminal.</p>
         </div>
         <div class="launch-list" id="launchList"></div>

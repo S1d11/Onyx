@@ -1,8 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="12" fill="#0C0C0E"/>
-  <polygon points="32,8 52,20 52,36 32,52 12,36 12,20" fill="none" stroke="#F4F4F5" stroke-width="2.5" stroke-linejoin="round"/>
-  <line x1="12" y1="20" x2="52" y2="20" stroke="#F4F4F5" stroke-width="1.5" opacity="0.4"/>
-  <line x1="12" y1="28" x2="52" y2="28" stroke="#F4F4F5" stroke-width="1" opacity="0.25"/>
-  <line x1="22" y1="20" x2="32" y2="8" stroke="#F4F4F5" stroke-width="1" opacity="0.3"/>
-  <line x1="42" y1="20" x2="32" y2="8" stroke="#F4F4F5" stroke-width="1" opacity="0.3"/>
+  <!-- Outer crystal outline -->
+  <path d="M32 4 L56 18 L56 46 L32 60 L8 46 L8 18 Z" fill="none" stroke="#F4F4F5" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Top-left facet -->
+  <path d="M32 4 L8 18 L32 22 Z" fill="none" stroke="#F4F4F5" stroke-width="1.2" opacity="0.55" stroke-linejoin="round"/>
+  <!-- Top-right facet -->
+  <path d="M32 4 L56 18 L32 22 Z" fill="none" stroke="#F4F4F5" stroke-width="1.2" opacity="0.4" stroke-linejoin="round"/>
+  <!-- Center horizontal divider -->
+  <path d="M8 18 L32 22 L56 18" fill="none" stroke="#F4F4F5" stroke-width="1.5" opacity="0.6" stroke-linejoin="round"/>
+  <!-- Left mid facet -->
+  <path d="M8 18 L32 22 L32 42 L8 46 Z" fill="none" stroke="#F4F4F5" stroke-width="1" opacity="0.2" stroke-linejoin="round"/>
+  <!-- Right mid facet -->
+  <path d="M56 18 L32 22 L32 42 L56 46 Z" fill="none" stroke="#F4F4F5" stroke-width="1" opacity="0.15" stroke-linejoin="round"/>
+  <!-- Banding layer 1 (prominent) -->
+  <line x1="12" y1="28" x2="52" y2="28" stroke="#F4F4F5" stroke-width="2" opacity="0.6"/>
+  <!-- Banding layer 2 -->
+  <line x1="11" y1="32" x2="53" y2="32" stroke="#F4F4F5" stroke-width="1.2" opacity="0.35"/>
+  <!-- Banding layer 3 (prominent) -->
+  <line x1="12" y1="36" x2="52" y2="36" stroke="#F4F4F5" stroke-width="2" opacity="0.5"/>
+  <!-- Banding layer 4 -->
+  <line x1="13" y1="40" x2="51" y2="40" stroke="#F4F4F5" stroke-width="1.2" opacity="0.3"/>
+  <!-- Banding layer 5 -->
+  <line x1="14" y1="44" x2="50" y2="44" stroke="#F4F4F5" stroke-width="1.5" opacity="0.2"/>
+  <!-- Center vertical facet line -->
+  <line x1="32" y1="22" x2="32" y2="42" stroke="#F4F4F5" stroke-width="1" opacity="0.25"/>
+  <!-- Bottom-left facet -->
+  <path d="M8 46 L32 42 L32 60 Z" fill="none" stroke="#F4F4F5" stroke-width="1" opacity="0.15" stroke-linejoin="round"/>
+  <!-- Bottom-right facet -->
+  <path d="M56 46 L32 42 L32 60 Z" fill="none" stroke="#F4F4F5" stroke-width="1" opacity="0.1" stroke-linejoin="round"/>
+  <!-- Subtle inner highlight -->
+  <path d="M28 8 L36 8" stroke="#F4F4F5" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+  <!-- Sparkle accents -->
+  <circle cx="40" cy="14" r="0.8" fill="#F4F4F5" opacity="0.5"/>
+  <circle cx="22" cy="50" r="0.6" fill="#F4F4F5" opacity="0.3"/>
 </svg>
