@@ -17,7 +17,7 @@ public class ChatStore
         try
         {
             if (File.Exists(_path))
-                Chats = JsonSerializer.Deserialize<List<StoredChat>>(File.ReadAllText(_path)) ?? new();
+                Chats = JsonSerializer.Deserialize<List<StoredChat>>(File.ReadAllText(_path), ConfigService.JsonOpts) ?? new();
         }
         catch { Chats = new(); }
     }

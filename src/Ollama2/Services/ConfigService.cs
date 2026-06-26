@@ -17,7 +17,7 @@ public class ConfigService
             if (File.Exists(_path))
             {
                 var json = File.ReadAllText(_path);
-                var saved = JsonSerializer.Deserialize<AppConfig>(json);
+                var saved = JsonSerializer.Deserialize<AppConfig>(json, JsonOpts);
                 if (saved != null)
                 {
                     // Merge: start from defaults, overwrite with saved values.
@@ -64,5 +64,6 @@ public class ConfigService
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
     };
 }

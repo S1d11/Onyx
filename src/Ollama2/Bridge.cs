@@ -21,7 +21,7 @@ internal sealed class Bridge
 {
     private readonly MainWindow _win;
     private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-    private CancellationTokenSource? _chatCts;
+    private readonly Dictionary<string, CancellationTokenSource> _chatCtsByChatId = new();
     private CancellationTokenSource? _pullCts;
     private readonly UpdateService _updater = new();
 
@@ -106,7 +106,7 @@ internal sealed class Bridge
                 "deleteChat" => HandleDeleteChat(payload),
                 "renameChat" => HandleRenameChat(payload),
                 "sendMessage" => await HandleSendMessage(payload),
-                "stopGeneration" => HandleStop(),
+                "stopGeneration" => HandleStop(payload),
                 "pullModel" => await HandlePull(payload),
                 "stopPull" => HandleStopPull(),
                 "deleteModel" => await App.Ollama.DeleteModelAsync(payload.GetProperty("name").GetString()!),
@@ -177,9 +177,25 @@ internal sealed class Bridge
         return true;
     }
 
-    private bool HandleStop()
+    private bool HandleStop(JsonElement root)
     {
-        try { _chatCts?.Cancel(); } catch { }
+        // Stop a specific chat's generation, or all if no chatId given
+        if (root.TryGetProperty("chatId", out var cidEl) && cidEl.ValueKind == JsonValueKind.String)
+        {
+            var chatId = cidEl.GetString()!;
+            if (_chatCtsByChatId.TryGetValue(chatId, out var cts))
+            {
+                try { cts.Cancel(); } catch { }
+            }
+        }
+        else
+        {
+            // Stop all
+            foreach (var cts in _chatCtsByChatId.Values)
+            {
+                try { cts.Cancel(); } catch { }
+            }
+        }
         return true;
     }
 
@@ -275,9 +291,15 @@ internal sealed class Bridge
             });
         }
 
-        try { _chatCts?.Cancel(); _chatCts?.Dispose(); } catch { }
-        _chatCts = new CancellationTokenSource();
-        var ct = _chatCts.Token;
+        // Cancel any previous generation for THIS chat only (other chats keep running)
+        if (_chatCtsByChatId.TryGetValue(chatId, out var existingCts))
+        {
+            try { existingCts.Cancel(); existingCts.Dispose(); } catch { }
+            _chatCtsByChatId.Remove(chatId);
+        }
+        var chatCts = new CancellationTokenSource();
+        _chatCtsByChatId[chatId] = chatCts;
+        var ct = chatCts.Token;
 
         var sw = Stopwatch.StartNew();
         List<SearchSource>? sources = null;
@@ -383,6 +405,12 @@ internal sealed class Bridge
         catch (Exception ex)
         {
             PostToWeb(new { @event = "chatError", chatId, message = ex.Message });
+        }
+        finally
+        {
+            // Clean up this chat's CTS from the concurrent map
+            _chatCtsByChatId.Remove(chatId);
+            try { chatCts.Dispose(); } catch { }
         }
         return true;
     }

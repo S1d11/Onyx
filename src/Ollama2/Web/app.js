@@ -9,16 +9,23 @@
     draftChat: null,
     models: [],
     currentModel: "",
-    streaming: false,
-    pendingAssistantEl: null,
-    pendingAssistantText: "",
     view: "chat",
     appVersion: "",
     hardware: null,
     modelVisionCache: {},   // modelName -> bool (supports vision)
     modelVisionLoading: {}, // modelName -> bool (currently checking)
     pendingImages: [],      // [{ dataUrl, name }] — base64 data URLs to send
+    // Per-chat streaming state: chatId -> { el, text, sources, searchStatusEl }
+    streaming: new Map(),
   };
+
+  function isStreaming(chatId) {
+    return state.streaming.has(chatId);
+  }
+
+  function isCurrentChatStreaming() {
+    return state.currentId && isStreaming(state.currentId);
+  }
 
   let _rpcCounter = 0;
   const pending = new Map();
@@ -112,7 +119,7 @@
     list.appendChild(label);
     state.chats.forEach(c => {
       const el = document.createElement("div");
-      el.className = "chat-item";
+      el.className = "chat-item" + (isStreaming(c.id) ? " streaming" : "");
       el.textContent = c.title;
       el.addEventListener("click", () => openChat(c.id));
       el.addEventListener("contextmenu", (ev) => {
@@ -204,15 +211,33 @@
     updateComposerModel();
     renderChatList();
     renderMessages(c);
-    const empty = c.messages.length === 0;
+    const empty = c.messages.length === 0 && !isStreaming(id);
     $("#emptyState").classList.toggle("hidden", !empty);
     $("#viewChat").classList.toggle("chat-empty", empty);
+    // Update streaming UI to reflect this chat's state
+    setStreamingUI(isCurrentChatStreaming());
   }
 
   function renderMessages(c) {
     const m = $("#messages");
     m.innerHTML = "";
     c.messages.forEach(msg => appendMessageEl(msg.role, msg.content, { sources: msg.sources, error: msg.error, evalCount: msg.evalCount, totalMs: msg.totalMs, images: msg.images }));
+    // If this chat is currently streaming, re-create the in-progress assistant element
+    const stream = state.streaming.get(c.id);
+    if (stream) {
+      const el = appendMessageEl("assistant", "");
+      stream.el = el; // update reference to the new DOM element
+      if (stream.text) {
+        el.querySelector(".msg-body").innerHTML = OllamaMD.render(stream.text) + '<span class="cursor"></span>';
+      } else {
+        el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
+      }
+      // Re-attach search status if present
+      if (stream.searchStatusEl) {
+        m.appendChild(stream.searchStatusEl);
+      }
+      m.scrollTop = m.scrollHeight;
+    }
   }
 
   function appendMessageEl(role, content, opts = {}) {
@@ -564,7 +589,7 @@
     const input = $("#promptInput");
     const text = input.value.trim();
     const images = [...state.pendingImages];
-    if ((!text && !images.length) || state.streaming) return;
+    if ((!text && !images.length) || isCurrentChatStreaming()) return;
     if (!state.currentModel) { toast("Select a model first"); return; }
 
     let chat = state.chats.find(c => c.id === state.currentId);
@@ -594,10 +619,10 @@
 
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
-    state.pendingAssistantEl = el;
-    state.pendingAssistantText = "";
-    state.streaming = true;
+    // Register per-chat streaming state
+    state.streaming.set(chat.id, { el, text: "", sources: null, searchStatusEl: null });
     setStreamingUI(true);
+    renderChatList(); // show streaming indicator
 
     // Build history — include images on the latest user message
     const history = chat.messages
@@ -616,23 +641,44 @@
   }
 
   function onChatChunk(msg) {
-    if (!state.pendingAssistantEl) return;
-    state.pendingAssistantText += msg.content;
-    state.pendingAssistantEl.querySelector(".msg-body").innerHTML = OllamaMD.render(state.pendingAssistantText) + '<span class="cursor"></span>';
-    $("#messages").scrollTop = $("#messages").scrollHeight;
+    const stream = state.streaming.get(msg.chatId);
+    if (!stream) return;
+    stream.text += msg.content;
+    if (stream.el) {
+      stream.el.querySelector(".msg-body").innerHTML = OllamaMD.render(stream.text) + '<span class="cursor"></span>';
+    }
+    // Only auto-scroll if we're viewing this chat
+    if (msg.chatId === state.currentId) {
+      $("#messages").scrollTop = $("#messages").scrollHeight;
+    }
   }
 
   function onChatDone(msg) {
-    state.streaming = false;
-    setStreamingUI(false);
-    if (!state.pendingAssistantEl) return;
-    const text = state.pendingAssistantText;
-    state.pendingAssistantEl.querySelector(".msg-body").innerHTML = OllamaMD.render(text);
-    if (msg.sources && msg.sources.length) state.pendingAssistantEl.querySelector(".msg-body").appendChild(buildSourcesEl(msg.sources, true));
-    appendMsgActions(state.pendingAssistantEl, text, { evalCount: msg.evalCount, totalMs: msg.totalMs });
+    const stream = state.streaming.get(msg.chatId);
+    state.streaming.delete(msg.chatId);
+    if (msg.chatId === state.currentId) setStreamingUI(false);
+    renderChatList(); // remove streaming indicator
+
+    if (!stream) {
+      // Stream was not visible (chat not open). Still need to store the message.
+      const c = state.chats.find(x => x.id === msg.chatId);
+      if (c && !msg.cancelled) {
+        c.messages.push({ role: "assistant", content: "", sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
+      }
+      return;
+    }
+
+    const text = stream.text;
+    if (stream.el) {
+      stream.el.querySelector(".msg-body").innerHTML = OllamaMD.render(text);
+      if (msg.sources && msg.sources.length) stream.el.querySelector(".msg-body").appendChild(buildSourcesEl(msg.sources, true));
+      appendMsgActions(stream.el, text, { evalCount: msg.evalCount, totalMs: msg.totalMs });
+    }
     const c = state.chats.find(x => x.id === msg.chatId);
     if (c) {
-      c.messages.push({ role: "assistant", content: text, sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
+      if (!msg.cancelled) {
+        c.messages.push({ role: "assistant", content: text, sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
+      }
       if (c.title === "New Chat") {
         const firstUser = c.messages.find(m => m.role === "user");
         c.title = generateTitle(firstUser?.content || text);
@@ -640,37 +686,53 @@
         renderChatList();
       }
     }
-    state.pendingAssistantEl = null;
-    state.pendingAssistantText = "";
   }
 
   function onChatError(msg) {
-    state.streaming = false;
-    setStreamingUI(false);
-    if (state.pendingAssistantEl) {
-      state.pendingAssistantEl.querySelector(".msg-body").innerHTML = `<div class="msg-error">${OllamaMD.escape(msg.message)}</div>`;
-      state.pendingAssistantEl = null;
-    } else { toast(msg.message); }
+    const stream = state.streaming.get(msg.chatId);
+    state.streaming.delete(msg.chatId);
+    if (msg.chatId === state.currentId) setStreamingUI(false);
+    renderChatList(); // remove streaming indicator
+    if (stream && stream.el) {
+      stream.el.querySelector(".msg-body").innerHTML = `<div class="msg-error">${OllamaMD.escape(msg.message)}</div>`;
+    } else {
+      toast(msg.message);
+    }
   }
 
   function onSearching(msg) {
+    const stream = state.streaming.get(msg.chatId);
+    if (!stream) return;
+    // Only show search status if viewing this chat
+    if (msg.chatId !== state.currentId) return;
     let s = $("#messages").querySelector(".search-status");
     if (!s) { s = document.createElement("div"); s.className = "search-status"; $("#messages").appendChild(s); }
+    stream.searchStatusEl = s;
     s.innerHTML = `<div class="spinner"></div> Searching the web for "${OllamaMD.escape(msg.query)}"…`;
     $("#messages").scrollTop = $("#messages").scrollHeight;
   }
 
   function onSearchResults(msg) {
-    const s = $("#messages").querySelector(".search-status");
-    if (s) s.remove();
-    if (msg.results && msg.results.length) {
+    const stream = state.streaming.get(msg.chatId);
+    if (stream && stream.searchStatusEl) {
+      stream.searchStatusEl.remove();
+      stream.searchStatusEl = null;
+    } else if (msg.chatId === state.currentId) {
+      const s = $("#messages").querySelector(".search-status");
+      if (s) s.remove();
+    }
+    // Store sources on the stream for later use
+    if (stream && msg.results) {
+      stream.sources = msg.results;
+    }
+    if (msg.chatId === state.currentId && msg.results && msg.results.length) {
       $("#messages").appendChild(buildSourcesEl(msg.results, false));
       $("#messages").scrollTop = $("#messages").scrollHeight;
     }
   }
 
   async function regenerate() {
-    if (state.streaming) return;
+    if (isCurrentChatStreaming()) return;
     let c = state.chats.find(x => x.id === state.currentId);
     // If current chat is a draft, persist it first
     if (!c && state.draftChat && state.draftChat.id === state.currentId) {
@@ -694,11 +756,17 @@
     });
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
-    state.pendingAssistantEl = el; state.pendingAssistantText = ""; state.streaming = true; setStreamingUI(true);
+    state.streaming.set(c.id, { el, text: "", sources: null, searchStatusEl: null });
+    setStreamingUI(true);
+    renderChatList();
     call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearchMode: state.config?.webSearchMode || (state.config?.webSearchEnabled ? "auto" : "off") });
   }
 
-  function stopGeneration() { emit("stopGeneration"); }
+  function stopGeneration() {
+    if (state.currentId) {
+      emit("stopGeneration", { chatId: state.currentId });
+    }
+  }
 
   function setStreamingUI(on) {
     $("#sendBtn").classList.toggle("hidden", on);
@@ -730,6 +798,11 @@
   }
 
   async function deleteChat(id) {
+    // Stop any streaming for this chat
+    if (isStreaming(id)) {
+      emit("stopGeneration", { chatId: id });
+      state.streaming.delete(id);
+    }
     // Check if it's a draft
     if (state.draftChat && state.draftChat.id === id) {
       state.draftChat = null;
@@ -749,6 +822,7 @@
       $("#messages").innerHTML = "";
       $("#emptyState").classList.remove("hidden");
       $("#viewChat").classList.add("chat-empty");
+      setStreamingUI(false);
     }
     renderChatList();
   }
@@ -800,6 +874,45 @@
     const spn = $("#sidebarProfileName"); if (spn) spn.textContent = cfg.defaultModel || "User";
     const spa = $("#sidebarProfileAvatar"); if (spa) spa.textContent = (cfg.defaultModel || "U").charAt(0).toUpperCase();
     $("#appVersion").textContent = "v" + state.appVersion;
+
+    // Default model dropdown
+    const modelSelect = $("#defaultModelSelect");
+    if (modelSelect) {
+      modelSelect.innerHTML = "";
+      if (!state.models.length) {
+        const opt = document.createElement("option");
+        opt.textContent = "No models installed";
+        opt.value = "";
+        modelSelect.appendChild(opt);
+      } else {
+        state.models.forEach(mo => {
+          const opt = document.createElement("option");
+          opt.value = mo.name;
+          opt.textContent = mo.name;
+          if (mo.name === cfg.defaultModel) opt.selected = true;
+          modelSelect.appendChild(opt);
+        });
+        if (!state.models.some(mo => mo.name === cfg.defaultModel) && cfg.defaultModel) {
+          const opt = document.createElement("option");
+          opt.value = cfg.defaultModel;
+          opt.textContent = cfg.defaultModel + " (not installed)";
+          opt.selected = true;
+          modelSelect.insertBefore(opt, modelSelect.firstChild);
+        }
+      }
+      modelSelect.onchange = () => {
+        const name = modelSelect.value;
+        if (!name) return;
+        if (state.config) {
+          state.config.defaultModel = name;
+          state.currentModel = name;
+          $("#composerModelLabel").textContent = name;
+          updateComposerModel();
+          call("saveConfig", { config: state.config });
+          initSettings(); // refresh profile name/avatar
+        }
+      };
+    }
 
     // Cloud toggle
     const cloudToggle = $("#toggleCloud");
@@ -1317,7 +1430,7 @@
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === "n") { e.preventDefault(); newChat(); }
       else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); const col = $("#sidebar").classList.contains("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !col); if (state.config) { state.config.sidebarVisible = !col; call("saveConfig", { config: state.config }); } }
-      else if (e.key === "Escape" && state.streaming) { stopGeneration(); }
+      else if (e.key === "Escape" && isCurrentChatStreaming()) { stopGeneration(); }
     });
   }
 
