@@ -420,12 +420,14 @@ public sealed class Bridge
             // This is ALWAYS injected (before any user-configured prompt) so the LLM
             // knows it can actually DO things, not just give instructions.
             var toolSummary = BuildToolSummary();
+            var ctxInfo = BuildBackgroundContext();
             sendMessages.Insert(0, new ChatMessage { Role = "system", Content =
                 $"You are Onyx, a desktop AI assistant running on the user's computer. You have direct access to the user's filesystem, system commands, and connected services.\n" +
                 $"When the user asks you to DO something (create a file, list a folder, run a command, send an email, search GitHub), you should DO it — not give instructions on how to do it manually.\n" +
                 $"Available tools: {toolSummary}\n" +
                 $"When a tool has already been executed, its result will appear as a system message labeled [tool result]. Summarize what the tool did for the user. If the tool failed, explain the error and suggest a fix.\n" +
-                $"If a tool is not connected, tell the user to go to the Connections tab to connect it."
+                $"If a tool is not connected, tell the user to go to the Connections tab to connect it.\n" +
+                ctxInfo
             });
 
             // Optional system prompt from settings (user can override/augment).
@@ -658,6 +660,55 @@ public sealed class Bridge
             sb.Append($"{def.Name} ({(connected ? "connected" : "not connected")}): {def.Description}; ");
         }
         return sb.ToString().TrimEnd(' ', ';');
+    }
+
+    /// <summary>
+    /// Build background context info: user's location, timezone, current date/time.
+    /// Injected silently into the system prompt so the LLM can use it without displaying it.
+    /// </summary>
+    private static string BuildBackgroundContext()
+    {
+        var sb = new StringBuilder();
+        var now = DateTime.Now;
+        var utcNow = DateTime.UtcNow;
+        var tz = TimeZoneInfo.Local;
+        var tzName = tz.DisplayName;
+        var tzId = tz.Id;
+
+        // Approximate location from timezone
+        var location = tzId switch
+        {
+            "Eastern Standard Time" => "Eastern US (EST/EDT)",
+            "Central Standard Time" => "Central US (CST/CDT)",
+            "Mountain Standard Time" => "Mountain US (MST/MDT)",
+            "Pacific Standard Time" => "Pacific US (PST/PDT)",
+            "Alaska Standard Time" => "Alaska (AKST/AKDT)",
+            "Hawaii-Aleutian Standard Time" => "Hawaii (HST/HDT)",
+            "GMT Standard Time" => "UK (GMT/BST)",
+            "Central European Standard Time" => "Central Europe (CET/CEST)",
+            "W. Europe Standard Time" => "Western Europe (CET/CEST)",
+            "India Standard Time" => "India (IST)",
+            "China Standard Time" => "China (CST)",
+            "Japan Standard Time" => "Japan (JST)",
+            "Korea Standard Time" => "Korea (KST)",
+            "Singapore Standard Time" => "Singapore (SGT)",
+            "Australia Eastern Standard Time" => "Eastern Australia (AEST/AEDT)",
+            "Australia Central Standard Time" => "Central Australia (ACST/ACDT)",
+            "Australia Western Standard Time" => "Western Australia (AWST)",
+            "New Zealand Standard Time" => "New Zealand (NZST/NZDT)",
+            _ => tzName,
+        };
+
+        sb.AppendLine();
+        sb.AppendLine($"Background context (use this silently — do not display it unless asked):");
+        sb.AppendLine($"- User's approximate location: {location}");
+        sb.AppendLine($"- Timezone: {tzId} ({tzName})");
+        sb.AppendLine($"- Current date: {now:dddd, MMMM d, yyyy}");
+        sb.AppendLine($"- Current local time: {now:hh:mm:ss tt}");
+        sb.AppendLine($"- Current UTC time: {utcNow:HH:mm:ss} UTC");
+        sb.AppendLine($"- Day of week: {now:DayOfWeek}");
+        sb.AppendLine($"Use this information when the user asks about dates, times, timezones, or anything time-sensitive (e.g. 'what are the scores today', 'what time is it in Tokyo', 'what's the date').");
+        return sb.ToString();
     }
 
     private static double EffortToTemperature(string effort)
