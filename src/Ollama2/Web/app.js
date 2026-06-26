@@ -79,6 +79,7 @@
       $("#composerModelLabel").textContent = state.currentModel || "Select";
       updateComposerModel();
       if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); }
+      if (state.config.webSearchEnabled) { $("#webSearchToggle").classList.add("active"); }
       const spn2 = $("#sidebarProfileName"); if (spn2) spn2.textContent = state.config.defaultModel || "User";
       const spa2 = $("#sidebarProfileAvatar"); if (spa2) spa2.textContent = (state.config.defaultModel || "U").charAt(0).toUpperCase();
     }
@@ -459,6 +460,7 @@
     state.currentModel = name;
     $("#composerModelLabel").textContent = name;
     updateComposerModel();
+    if (state.config) { state.config.defaultModel = name; call("saveConfig", { config: state.config }); }
     if (state.currentId) { const c = state.chats.find(x => x.id === state.currentId); if (c) c.model = name; }
     renderModelMenu();
   }
@@ -1051,6 +1053,7 @@
       sb.classList.toggle("collapsed");
       const isCollapsed = sb.classList.contains("collapsed");
       $("#topbarNewChat").classList.toggle("hidden", !isCollapsed);
+      if (state.config) { state.config.sidebarVisible = !isCollapsed; call("saveConfig", { config: state.config }); }
     });
     $("#topbarNewChat").addEventListener("click", newChat);
     $("#modelPill").addEventListener("click", (e) => {
@@ -1065,7 +1068,8 @@
     window.addEventListener("resize", () => { positionMenu(); });
 
     $("#webSearchToggle").addEventListener("click", () => {
-      $("#webSearchToggle").classList.toggle("active");
+      const on = $("#webSearchToggle").classList.toggle("active");
+      if (state.config) { state.config.webSearchEnabled = on; call("saveConfig", { config: state.config }); }
     });
 
     $("#sendBtn").addEventListener("click", send);
@@ -1085,7 +1089,7 @@
     document.addEventListener("keydown", (e) => {
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === "n") { e.preventDefault(); newChat(); }
-      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); const col = $("#sidebar").classList.contains("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !col); }
+      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); const col = $("#sidebar").classList.contains("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !col); if (state.config) { state.config.sidebarVisible = !col; call("saveConfig", { config: state.config }); } }
       else if (e.key === "Escape" && state.streaming) { stopGeneration(); }
     });
   }

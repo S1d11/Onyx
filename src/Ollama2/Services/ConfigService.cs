@@ -17,7 +17,27 @@ public class ConfigService
             if (File.Exists(_path))
             {
                 var json = File.ReadAllText(_path);
-                Current = JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                var saved = JsonSerializer.Deserialize<AppConfig>(json);
+                if (saved != null)
+                {
+                    // Merge: start from defaults, overwrite with saved values.
+                    // This ensures new fields added in updates get their defaults
+                    // instead of being null/zero if the saved file is from an older version.
+                    var merged = new AppConfig();
+                    foreach (var prop in typeof(AppConfig).GetProperties())
+                    {
+                        if (!prop.CanRead || !prop.CanWrite) continue;
+                        var val = prop.GetValue(saved);
+                        // Only overwrite the default if the saved value differs from the property's default
+                        // For nullable types, overwrite if non-null; for value types, overwrite always
+                        // (since the saved file explicitly serialized them)
+                        if (val != null)
+                        {
+                            prop.SetValue(merged, val);
+                        }
+                    }
+                    Current = merged;
+                }
             }
         }
         catch { Current = new AppConfig(); }
