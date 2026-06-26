@@ -426,7 +426,14 @@ public sealed class Bridge
                 $"When the user asks you to DO something (create a file, list a folder, run a command, send an email, search GitHub), you should DO it — not give instructions on how to do it manually.\n" +
                 $"Available tools: {toolSummary}\n" +
                 $"When a tool has already been executed, its result will appear as a system message labeled [tool result]. Summarize what the tool did for the user. If the tool failed, explain the error and suggest a fix.\n" +
-                $"If a tool is not connected, tell the user to go to the Connections tab to connect it.\n" +
+                $"If a tool is not connected, tell the user to go to the Connections tab to connect it.\n\n" +
+                $"CRITICAL RULES FOR FACTUAL CLAIMS:\n" +
+                $"- NEVER make up facts, numbers, dates, scores, prices, or statistics. If you don't know the answer, say so.\n" +
+                $"- For any factual claim about current events, news, sports scores, prices, weather, or real-time data, you MUST use web search and cite the source.\n" +
+                $"- When you have web search results or fetched page content, base your answer ONLY on what the pages actually say. Do not guess or fill in gaps with assumptions.\n" +
+                $"- If the search results don't contain the answer, say \"I couldn't find a definitive answer\" rather than making something up.\n" +
+                $"- Always cite sources inline as [1], [2], etc. matching the numbered sources provided to you.\n" +
+                $"- If you are NOT confident in an answer, say so explicitly. Prefers honesty over a confident-sounding wrong answer.\n" +
                 ctxInfo
             });
 
