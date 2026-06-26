@@ -105,7 +105,9 @@ public sealed class Bridge
                 "confirmSystemAction" => HandleConfirmSystemAction(payload),
                 "connectGoogle" => await HandleConnectGoogle(),
                 "disconnectGoogle" => HandleDisconnectGoogle(),
-                "connectGitHub" => await HandleConnectGitHub(),
+                "connectGitHub" => await HandleStartGitHubAuth(),
+                "completeGitHubAuth" => await HandleCompleteGitHubAuth(),
+                "cancelGitHubAuth" => HandleCancelGitHubAuth(),
                 "disconnectGitHub" => HandleDisconnectGitHub(),
                 "getConnectorConfig" => HandleGetConnectorConfig(),
                 _ => null,
@@ -298,13 +300,34 @@ public sealed class Bridge
         return true;
     }
 
-    private async Task<object> HandleConnectGitHub()
+    private async Task<object> HandleStartGitHubAuth()
     {
         if (!ConnectorCredentials.GitHubConfigured)
             return new { success = false, error = "GitHub OAuth credentials not configured. See ConnectorCredentials.cs." };
         var oauth = AppContext.Current.GitHubOAuth;
-        var token = await oauth.ConnectAsync();
+        var deviceCode = await oauth.StartAuthAsync(default);
+        if (deviceCode == null)
+            return new { success = false, error = "Failed to request device code from GitHub." };
+        return new
+        {
+            success = true,
+            userCode = deviceCode.UserCode,
+            verificationUri = deviceCode.VerificationUri,
+            expiresIn = deviceCode.ExpiresIn,
+        };
+    }
+
+    private async Task<object> HandleCompleteGitHubAuth()
+    {
+        var oauth = AppContext.Current.GitHubOAuth;
+        var token = await oauth.CompleteAuthAsync(default);
         return new { success = !string.IsNullOrEmpty(token), connected = !string.IsNullOrEmpty(token) };
+    }
+
+    private bool HandleCancelGitHubAuth()
+    {
+        AppContext.Current.GitHubOAuth.CancelAuth();
+        return true;
     }
 
     private bool HandleDisconnectGitHub()

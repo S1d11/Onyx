@@ -32,6 +32,9 @@ public class GitHubOAuthService
 
     private readonly ConfigService _config;
 
+    // Store the device code between StartAuth and CompleteAuth calls
+    private DeviceCodeResponse? _pendingDeviceCode;
+
     public GitHubOAuthService(ConfigService config)
     {
         _config = config;
@@ -136,22 +139,41 @@ public class GitHubOAuthService
     }
 
     /// <summary>
-    /// Convenience method: request device code, open browser, poll for token.
-    /// Returns the access token or null.
+    /// Step 1 of device flow: request a device code from GitHub, open the browser
+    /// to the verification page, and return the user code for the UI to display.
+    /// The user enters this code at github.com/login/device.
     /// </summary>
-    public async Task<string?> ConnectAsync(Action<DeviceCodeResponse>? onCodeReceived = null, CancellationToken ct = default)
+    public async Task<DeviceCodeResponse?> StartAuthAsync(CancellationToken ct = default)
     {
         var deviceCode = await RequestDeviceCodeAsync(ct);
         if (deviceCode == null) return null;
 
-        // Notify UI to show the code
-        onCodeReceived?.Invoke(deviceCode);
+        _pendingDeviceCode = deviceCode;
 
         // Open browser to the verification URL
         OpenBrowser(deviceCode.VerificationUri);
 
-        // Poll until authorized
-        return await PollForTokenAsync(deviceCode.DeviceCode, deviceCode.Interval, ct);
+        return deviceCode;
+    }
+
+    /// <summary>
+    /// Step 2 of device flow: poll GitHub for the access token.
+    /// Call this after the user has entered the code at github.com/login/device.
+    /// Returns the access token, or null if the user didn't authorize in time.
+    /// </summary>
+    public async Task<string?> CompleteAuthAsync(CancellationToken ct = default)
+    {
+        if (_pendingDeviceCode == null) return null;
+        var code = _pendingDeviceCode;
+        _pendingDeviceCode = null;
+
+        return await PollForTokenAsync(code.DeviceCode, code.Interval, ct);
+    }
+
+    /// <summary>Cancel a pending auth — clears the stored device code.</summary>
+    public void CancelAuth()
+    {
+        _pendingDeviceCode = null;
     }
 
     /// <summary>Disconnect — clear the stored token.</summary>

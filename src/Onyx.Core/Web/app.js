@@ -235,46 +235,90 @@
     dialog.className = "github-connect-dialog";
     dialog.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:300;";
     dialog.innerHTML = `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;width:400px;max-width:90vw;text-align:center;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;width:420px;max-width:90vw;text-align:center;">
         <div style="width:56px;height:56px;border-radius:14px;background:#181717;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </div>
-        <h3 style="margin:0 0 8px;font-size:18px;color:var(--text);">Connect GitHub</h3>
-        <p style="margin:0 0 24px;font-size:13px;color:var(--text-muted);">Sign in with your GitHub account to access repositories, issues, pull requests, and code search.</p>
-        <div id="githubConnectStatus" style="margin-bottom:16px;font-size:13px;color:var(--text-muted);min-height:20px;"></div>
-        <div style="display:flex;gap:8px;justify-content:center;">
-          <button id="githubCancel" style="padding:10px 20px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface-hover);color:var(--text);font-size:14px;cursor:pointer;">Cancel</button>
-          <button id="githubSignIn" style="padding:10px 20px;border-radius:var(--radius-md);border:none;background:#181717;color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-            Sign in with GitHub
-          </button>
+
+        <!-- Step 1: Initial sign-in button -->
+        <div id="githubStep1">
+          <h3 style="margin:0 0 8px;font-size:18px;color:var(--text);">Connect GitHub</h3>
+          <p style="margin:0 0 24px;font-size:13px;color:var(--text-muted);">Sign in with your GitHub account to access repositories, issues, pull requests, and code search.</p>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button id="githubCancel" style="padding:10px 20px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface-hover);color:var(--text);font-size:14px;cursor:pointer;">Cancel</button>
+            <button id="githubSignIn" style="padding:10px 20px;border-radius:var(--radius-md);border:none;background:#181717;color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              Sign in with GitHub
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Show the code (hidden initially) -->
+        <div id="githubStep2" style="display:none;">
+          <h3 style="margin:0 0 8px;font-size:18px;color:var(--text);">Enter this code on GitHub</h3>
+          <p style="margin:0 0 16px;font-size:13px;color:var(--text-muted);">A browser tab has opened. Enter the code below to authorize Onyx.</p>
+          <div id="githubUserCode" style="font-family:'SF Mono','Cascadia Code','Consolas',monospace;font-size:36px;font-weight:700;letter-spacing:4px;color:var(--text);background:var(--bg);border:2px solid var(--border);border-radius:var(--radius-md);padding:16px 24px;margin:0 auto 16px;display:inline-block;">------</div>
+          <div id="githubConnectStatus" style="margin-bottom:16px;font-size:13px;color:var(--text-muted);min-height:20px;">Waiting for you to authorize on GitHub...</div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button id="githubCancel2" style="padding:10px 20px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface-hover);color:var(--text);font-size:14px;cursor:pointer;">Cancel</button>
+          </div>
         </div>
       </div>
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelector("#githubCancel").addEventListener("click", () => dialog.remove());
+    const step1 = dialog.querySelector("#githubStep1");
+    const step2 = dialog.querySelector("#githubStep2");
+    const codeEl = dialog.querySelector("#githubUserCode");
+    const statusEl = dialog.querySelector("#githubConnectStatus");
+
+    const closeDialog = () => {
+      call("cancelGitHubAuth", {}).catch(() => {});
+      dialog.remove();
+    };
+
+    dialog.querySelector("#githubCancel").addEventListener("click", closeDialog);
+    dialog.querySelector("#githubCancel2").addEventListener("click", closeDialog);
+
     dialog.querySelector("#githubSignIn").addEventListener("click", async () => {
-      const statusEl = dialog.querySelector("#githubConnectStatus");
       const btn = dialog.querySelector("#githubSignIn");
       btn.disabled = true;
       btn.style.opacity = "0.6";
-      statusEl.textContent = "Opening browser... Enter the code on GitHub, then wait.";
 
       try {
+        // Step 1: Request device code from GitHub
         const result = await call("connectGitHub", {});
-        if (result && result.success) {
+        if (!result || !result.success) {
+          statusEl.textContent = result?.error || "Failed to start. Please try again.";
+          btn.disabled = false;
+          btn.style.opacity = "1";
+          return;
+        }
+
+        // Show the user code
+        step1.style.display = "none";
+        step2.style.display = "block";
+        codeEl.textContent = result.userCode;
+
+        // Step 2: Poll for the token (user enters code on GitHub)
+        const pollResult = await call("completeGitHubAuth", {});
+        if (pollResult && pollResult.success) {
           state.config.githubToken = "connected";
           dialog.remove();
           renderConnections();
           toast("GitHub connected");
         } else {
-          statusEl.textContent = result?.error || "Failed to connect. Please try again.";
+          statusEl.textContent = "Authorization timed out or was denied. Please try again.";
+          // Go back to step 1 so user can retry
+          step2.style.display = "none";
+          step1.style.display = "block";
           btn.disabled = false;
           btn.style.opacity = "1";
         }
       } catch (e) {
         statusEl.textContent = "Error: " + (e.message || e);
+        step2.style.display = "none";
+        step1.style.display = "block";
         btn.disabled = false;
         btn.style.opacity = "1";
       }
