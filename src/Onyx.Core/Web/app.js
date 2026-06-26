@@ -932,7 +932,7 @@
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
     // Register per-chat streaming state
-    state.streaming.set(chat.id, { el, text: "", sources: null, searchStatusEl: null, tempSourcesEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
+    state.streaming.set(chat.id, { el, text: "", sources: null, searchStatusEl: null, tempSourcesEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false, lastPhase: null });
     setStreamingUI(true);
     renderChatList(); // show streaming indicator
 
@@ -974,19 +974,44 @@
 
     if (stream.el) {
       const body = stream.el.querySelector(".msg-body");
-      if (parsed.thinking && !parsed.done) {
-        // Still thinking: show in-progress indicator
-        renderThinkingInProgress(body, parsed.thinking, parsed.main);
-      } else {
-        renderAssistantBody(body, parsed.main || "", {
-          thinking: parsed.thinking,
-          thinkingMs: stream.thinkingMs,
-          thinkingExpanded: stream.thinkingExpanded,
-          isStreaming: true
-        });
-        if (!parsed.done) {
+      // Determine current phase: "thinking" while thinking and not done, else "main"
+      const phase = (parsed.thinking && !parsed.done) ? "thinking" : "main";
+
+      if (phase !== stream.lastPhase) {
+        // Phase changed — rebuild structure once
+        stream.lastPhase = phase;
+        if (phase === "thinking") {
+          renderThinkingInProgress(body, parsed.thinking, parsed.main);
+        } else {
+          renderAssistantBody(body, parsed.main || "", {
+            thinking: parsed.thinking,
+            thinkingMs: stream.thinkingMs,
+            thinkingExpanded: stream.thinkingExpanded,
+            isStreaming: true
+          });
           const mainDiv = body.querySelector(".msg-main-content");
-          if (mainDiv) mainDiv.innerHTML += '<span class="cursor"></span>';
+          if (mainDiv && !parsed.done) mainDiv.innerHTML += '<span class="cursor"></span>';
+        }
+      } else {
+        // Same phase — update content in place (no DOM rebuild = no strobing)
+        if (phase === "thinking") {
+          const thinkContent = body.querySelector(".msg-thinking-content");
+          if (thinkContent) thinkContent.innerHTML = OllamaMD.render(parsed.thinking);
+          const mainDiv = body.querySelector(".msg-main-content");
+          if (mainDiv) {
+            if (parsed.main) {
+              mainDiv.innerHTML = OllamaMD.render(parsed.main);
+              if (!parsed.done) mainDiv.innerHTML += '<span class="cursor"></span>';
+            } else {
+              mainDiv.innerHTML = '<span class="cursor"></span>';
+            }
+          }
+        } else {
+          const mainDiv = body.querySelector(".msg-main-content");
+          if (mainDiv) {
+            mainDiv.innerHTML = OllamaMD.render(parsed.main || "");
+            if (!parsed.done) mainDiv.innerHTML += '<span class="cursor"></span>';
+          }
         }
       }
     }
@@ -1227,7 +1252,7 @@
     });
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
-    state.streaming.set(c.id, { el, text: "", sources: null, searchStatusEl: null, tempSourcesEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
+    state.streaming.set(c.id, { el, text: "", sources: null, searchStatusEl: null, tempSourcesEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false, lastPhase: null });
     setStreamingUI(true);
     renderChatList();
     call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearchMode: state.config?.webSearchMode || (state.config?.webSearchEnabled ? "auto" : "off") });
