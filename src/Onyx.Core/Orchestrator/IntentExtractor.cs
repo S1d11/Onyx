@@ -113,11 +113,11 @@ public class IntentExtractor
         }
     }
 
-    /// <summary>The system prompt that instructs the LLM to act as an intent classifier.</summary>
+    /// <summary>The system prompt that instructs the LLM to act as an intent classifier + tool selector.</summary>
     private string BuildSystemPrompt(string toolList)
     {
-        return "You are an intent extraction system for a desktop AI assistant that HAS FULL ACCESS to the user's computer and connected services.\n" +
-               "Analyze the user's message and determine their intent.\n" +
+        return "You are an intent extraction and tool selection system for a desktop AI assistant that HAS FULL ACCESS to the user's computer and connected services.\n" +
+               "Analyze the user's message, determine their intent, and select the best tool to handle the request.\n" +
                "Respond ONLY with a JSON object — no markdown, no explanation, no code fences.\n\n" +
                "Available intent types:\n" +
                "- \"chat\": General conversation, Q&A, explanations, opinions. The user wants YOU to talk or explain.\n" +
@@ -128,24 +128,29 @@ public class IntentExtractor
                "- \"summarize\": Summarizing or condensing text.\n" +
                "- \"translate\": Translating between languages.\n" +
                "- \"toolUse\": The user wants to DO something — on their computer or via a connected service. Not just talk about it.\n\n" +
-               "Available tools (for context — tool selection is handled separately by semantic routing):\n" + toolList + "\n\n" +
+               "Available tools:\n" + toolList + "\n\n" +
                "CRITICAL RULES FOR CLASSIFICATION:\n" +
                "- If the user wants to PERFORM an action (create/read/write/delete files, run commands, send emails, access cloud files, interact with GitHub, check system info), classify as \"toolUse\".\n" +
                "- If the user is asking a QUESTION that could be answered with general knowledge, classify as \"chat\".\n" +
                "- If the user wants code to COPY and run themselves, classify as \"code\".\n" +
                "- When in doubt, prefer \"toolUse\" — the user will see a confirmation dialog for destructive actions.\n\n" +
+               "TOOL SELECTION:\n" +
+               "- If the intent is \"toolUse\", you MUST set \"targetTool\" to the name of the tool that should handle the request.\n" +
+               "- Use the tool name exactly as listed above (e.g. \"filesystem\", \"system\", \"github\", \"gmail\", \"gdrive\", \"webSearch\", \"codeExecutor\").\n" +
+               "- If the intent is NOT \"toolUse\", set \"targetTool\" to null.\n" +
+               "- Also add the tool name to \"suggestedTools\" so it can be used as a fallback.\n\n" +
                "Analyze the SEMANTIC MEANING of the message — what the user is trying to accomplish — not just keywords.\n" +
                "Consider the full context of the conversation if provided.\n\n" +
                "Respond with this exact JSON structure:\n" +
-               "{\"intent\":\"toolUse\",\"confidence\":0.95,\"summary\":\"Send email to john@example.com about project update\",\"entities\":[\"email\",\"john@example.com\",\"project update\"],\"language\":\"en\",\"targetTool\":null,\"suggestedTools\":[],\"shouldExecuteTools\":true}\n\n" +
+               "{\"intent\":\"toolUse\",\"confidence\":0.95,\"summary\":\"Create a folder called hello in Downloads\",\"entities\":[\"folder\",\"hello\",\"downloads\"],\"language\":\"en\",\"targetTool\":\"filesystem\",\"suggestedTools\":[\"filesystem\"],\"shouldExecuteTools\":true}\n\n" +
                "Rules:\n" +
                "- \"intent\" must be one of the exact values listed above\n" +
                "- \"confidence\" is 0.0 to 1.0 — how sure you are\n" +
                "- \"summary\" is a short description of the user's goal\n" +
                "- \"entities\" are key topics, technologies, or nouns\n" +
                "- \"language\" is the ISO code of the detected language\n" +
-               "- \"targetTool\": leave null — tool selection is handled by semantic routing\n" +
-               "- \"suggestedTools\": leave empty — tool selection is handled by semantic routing\n" +
+               "- \"targetTool\": the name of the tool to execute (from the list above), or null if no tool is needed\n" +
+               "- \"suggestedTools\": same as targetTool but as an array; include the tool name here too\n" +
                "- \"shouldExecuteTools\" is true if tools should run automatically before generating the answer\n" +
                "- For toolUse intents, ALWAYS set shouldExecuteTools to true so the action actually runs\n";
     }

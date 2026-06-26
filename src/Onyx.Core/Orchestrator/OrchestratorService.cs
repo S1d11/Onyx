@@ -26,7 +26,6 @@ public class OrchestratorService
     private readonly IntentExtractor _extractor;
     private readonly ToolRegistry _tools;
     private readonly OllamaClient _ollama;
-    private readonly SemanticRouter _router;
 
     /// <summary>Raised when the orchestrator starts extracting intent. UI can show "Analyzing...".</summary>
     public event EventHandler<OrchestratorStageEventArgs>? StageChanged;
@@ -41,13 +40,11 @@ public class OrchestratorService
     public event EventHandler<ToolResult>? ToolExecuted;
 
     public ToolRegistry Tools => _tools;
-    public SemanticRouter Router => _router;
 
     public OrchestratorService(OllamaClient ollama, Func<string> getModel)
     {
         _ollama = ollama;
         _tools = new ToolRegistry();
-        _router = new SemanticRouter(ollama, getModel, _tools);
         _extractor = new IntentExtractor(ollama, getModel, _tools);
     }
 
@@ -171,71 +168,28 @@ public class OrchestratorService
     /// Uses embeddings (cosine similarity) to match the user's message to the best tool —
     /// no keyword matching involved.
     /// </summary>
-    private async Task<List<string>> DetermineToolsAsync(Intent intent, string userMessage, CancellationToken ct)
+    private Task<List<string>> DetermineToolsAsync(Intent intent, string userMessage, CancellationToken ct)
     {
         var tools = new List<string>();
 
-        // Use tools suggested by the LLM if they're available
+        // Use the tool selected by the LLM classifier (it picks the tool directly now,
+        // using its own reasoning — no semantic routing / embeddings needed).
+        if (!string.IsNullOrEmpty(intent.TargetTool) && _tools.IsAvailable(intent.TargetTool!))
+            tools.AddIfMissing(intent.TargetTool!);
+
+        // Also check suggestedTools as a fallback
         foreach (var suggested in intent.SuggestedTools)
         {
             if (_tools.IsAvailable(suggested) && !tools.Contains(suggested))
-                tools.Add(suggested);
+                tools.AddIfMissing(suggested);
         }
 
-        // Intent-type-based routing (built-in logic)
+        // Intent-type-based routing (built-in logic for specific intents)
         if (intent.Type == IntentType.WebSearch && _tools.IsAvailable("webSearch"))
             tools.AddIfMissing("webSearch");
 
         if (intent.Type == IntentType.Code && _tools.IsAvailable("codeExecutor"))
             tools.AddIfMissing("codeExecutor");
-
-        // ToolUse intent: use semantic routing to find the best tool
-        if (intent.Type == IntentType.ToolUse)
-        {
-            // If the LLM already named a specific valid tool, use it
-            if (!string.IsNullOrEmpty(intent.TargetTool) && _tools.IsAvailable(intent.TargetTool!))
-            {
-                tools.AddIfMissing(intent.TargetTool!);
-            }
-            else
-            {
-                // Semantic search: embed the user message and match to tool embeddings
-                OnStage("routing", "Finding the right tool...");
-                var semanticMatch = await _router.MatchToolAsync(userMessage, threshold: 0.30, ct: ct);
-                if (!string.IsNullOrEmpty(semanticMatch))
-                {
-                    tools.AddIfMissing(semanticMatch);
-                }
-                else
-                {
-                    // Last resort: try semantic match on the summary instead of full message
-                    var summaryMatch = await _router.MatchToolAsync(intent.Summary ?? userMessage, threshold: 0.25, ct: ct);
-                    if (!string.IsNullOrEmpty(summaryMatch))
-                        tools.AddIfMissing(summaryMatch);
-                }
-            }
-        }
-
-        // ALWAYS run semantic routing as a fallback, even for Chat/Code/etc.
-        // The LLM classifier often misclassifies tool requests as "chat" (e.g. "make a folder"
-        // gets classified as Chat 99%). The semantic router catches these by matching the
-        // user's message against tool descriptions. If it finds a strong match, we run the tool
-        // regardless of what the classifier said.
-        if (tools.Count == 0)
-        {
-            OnStage("routing", "Finding the right tool...");
-            var fallbackMatch = await _router.MatchToolAsync(userMessage, threshold: 0.30, ct: ct);
-            if (!string.IsNullOrEmpty(fallbackMatch))
-            {
-                tools.AddIfMissing(fallbackMatch);
-                // Force the intent to ToolUse so the system prompt guidance applies
-                if (intent.Type != IntentType.ToolUse)
-                {
-                    intent.Type = IntentType.ToolUse;
-                    intent.ShouldExecuteTools = true;
-                }
-            }
-        }
 
         // Only auto-execute if the intent says so.
         // BUT: if the intent is explicitly toolUse with a target tool, always execute
@@ -243,7 +197,7 @@ public class OrchestratorService
         if (!intent.ShouldExecuteTools && intent.Type != IntentType.ToolUse)
             tools.Clear();
 
-        return tools;
+        return Task.FromResult(tools);
     }
 
     /// <summary>Get an intent-specific system prompt to guide the LLM's response style.</summary>
