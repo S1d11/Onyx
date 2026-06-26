@@ -90,6 +90,7 @@
       case "toolExecuting": onToolExecuting(msg); break;
       case "toolExecuted": onToolExecuted(msg); break;
       case "systemConfirmation": onSystemConfirmation(msg); break;
+      case "chatTitle": onChatTitle(msg); break;
       case "pullProgress": onPullProgress(msg); break;
       case "pullDone": onPullDone(msg); break;
       case "pullCancelled": onPullCancelled(msg); break;
@@ -790,12 +791,19 @@
     }
   }
 
+  function onChatTitle(msg) {
+    const c = state.chats.find(x => x.id === msg.chatId);
+    if (c) {
+      c.title = msg.title;
+      renderChatList();
+    }
+  }
+
   function onChatDone(msg) {
     const stream = state.streaming.get(msg.chatId);
     state.streaming.delete(msg.chatId);
     if (msg.chatId === state.currentId) setStreamingUI(false);
     renderChatList(); // remove streaming indicator
-
     // Parse thinking from the full raw text
     const parsed = stream ? extractThinking(stream.text) : { thinking: null, main: "", done: true };
     const mainText = parsed.main;

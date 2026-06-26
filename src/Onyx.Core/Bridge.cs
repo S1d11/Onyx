@@ -294,9 +294,14 @@ public sealed class Bridge
         var chat = AppContext.Current.Chats.Get(chatId);
         if (chat == null) return false;
 
-        // Title from first user message
-        if ((chat.Title == "New Chat" || string.IsNullOrEmpty(chat.Title)) && messages.FirstOrDefault(x => x.Role == "user")?.Content is { Length: > 0 } firstUser)
+        // Title from first user message (temporary — will be refined by LLM after response)
+        var needsTitle = (chat.Title == "New Chat" || string.IsNullOrEmpty(chat.Title));
+        if (needsTitle && messages.FirstOrDefault(x => x.Role == "user")?.Content is { Length: > 0 } firstUser)
+        {
             chat.Title = firstUser.Length > 48 ? firstUser.Substring(0, 48) + "…" : firstUser;
+            // Notify the client immediately so the sidebar updates
+            PostToWeb(new { @event = "chatTitle", chatId, title = chat.Title });
+        }
 
         // Store the latest user message (with images if any) so it persists across reloads
         var lastUserMsg = messages.LastOrDefault(x => x.Role == "user");
@@ -503,6 +508,12 @@ public sealed class Bridge
                 totalMs = sw.ElapsedMilliseconds,
                 cancelled = ct.IsCancellationRequested,
             });
+
+            // Generate a proper title via LLM if this was the first message
+            if (needsTitle && !ct.IsCancellationRequested)
+            {
+                _ = GenerateTitleAsync(chatId, lastUser, mainText, ct);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -539,6 +550,51 @@ public sealed class Bridge
             "max" => 1.2,
             _ => 0.7,
         };
+
+    /// <summary>Generate a concise chat title from the first user message + assistant response using the LLM.</summary>
+    private async Task GenerateTitleAsync(string chatId, string userMessage, string assistantResponse, CancellationToken ct)
+    {
+        try
+        {
+            // Truncate the assistant response to keep the title generation fast
+            var truncatedResponse = assistantResponse.Length > 500 ? assistantResponse[..500] + "…" : assistantResponse;
+
+            var titleReq = new ChatRequest
+            {
+                Model = AppContext.Current.Config.Current.DefaultModel,
+                Messages = new List<ChatMessage>
+                {
+                    new() { Role = "system", Content = "Generate a short, descriptive title (max 5 words) for this conversation. Respond with ONLY the title — no quotes, no explanation, no punctuation at the end." },
+                    new() { Role = "user", Content = $"User: {userMessage}\n\nAssistant: {truncatedResponse}" },
+                },
+                Stream = false,
+                Options = new Dictionary<string, object>
+                {
+                    { "temperature", 0.3 },
+                    { "top_k", 10 },
+                    { "top_p", 0.8 },
+                    { "num_ctx", 1024 },
+                    { "num_predict", 20 },
+                },
+            };
+
+            var titleResp = await AppContext.Current.Ollama.ChatOnceAsync(titleReq, ct);
+            var title = titleResp.Message?.Content?.Trim().Trim('"', '\'', '.', ':', '-') ?? "";
+            if (string.IsNullOrEmpty(title)) return;
+            if (title.Length > 60) title = title.Substring(0, 60) + "…";
+
+            var chat = AppContext.Current.Chats.Get(chatId);
+            if (chat == null) return;
+            chat.Title = title;
+            AppContext.Current.Chats.Save();
+
+            PostToWeb(new { @event = "chatTitle", chatId, title });
+        }
+        catch
+        {
+            // Title generation failure is non-critical — keep the truncated first-message title
+        }
+    }
 
     /// <summary>Extract  ...  or <thinking>...</thinking> content, returning (main, thinking).</summary>
     private static (string main, string? thinking) ExtractThinking(string text)
