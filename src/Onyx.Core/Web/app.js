@@ -85,6 +85,10 @@
       case "chatError": onChatError(msg); break;
       case "searching": onSearching(msg); break;
       case "searchResults": onSearchResults(msg); break;
+      case "orchestratorStage": onOrchestratorStage(msg); break;
+      case "intent": onIntent(msg); break;
+      case "toolExecuting": onToolExecuting(msg); break;
+      case "toolExecuted": onToolExecuted(msg); break;
       case "pullProgress": onPullProgress(msg); break;
       case "pullDone": onPullDone(msg); break;
       case "pullCancelled": onPullCancelled(msg); break;
@@ -859,6 +863,59 @@
     stream.searchStatusEl = s;
     s.innerHTML = `<div class="spinner"></div> Searching the web for "${OllamaMD.escape(msg.query)}"…`;
     $("#messages").scrollTop = $("#messages").scrollHeight;
+  }
+
+  // ---- Orchestrator events ----
+  function onOrchestratorStage(msg) {
+    if (msg.chatId !== state.currentId) return;
+    let s = $("#messages").querySelector(".orchestrator-status");
+    if (!s) {
+      s = document.createElement("div");
+      s.className = "orchestrator-status";
+      s.style.cssText = "padding:8px 16px;font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:8px;";
+      $("#messages").appendChild(s);
+    }
+    const spinner = msg.stage !== "generating" ? '<div class="spinner" style="width:14px;height:14px"></div>' : "";
+    s.innerHTML = `${spinner} ${OllamaMD.escape(msg.message)}`;
+    if (msg.stage === "generating") s.remove();
+    $("#messages").scrollTop = $("#messages").scrollHeight;
+  }
+
+  function onIntent(msg) {
+    if (msg.chatId !== state.currentId) return;
+    // Show a subtle intent badge above the response
+    let badge = $("#messages").querySelector(".intent-badge");
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.className = "intent-badge";
+      badge.style.cssText = "padding:4px 12px;font-size:11px;color:var(--text-muted);opacity:0.7;";
+      $("#messages").appendChild(badge);
+    }
+    const intentLabel = msg.intentType.replace(/([A-Z])/g, ' $1').trim();
+    const tools = msg.suggestedTools && msg.suggestedTools.length ? ` → ${msg.suggestedTools.join(", ")}` : "";
+    badge.textContent = `Intent: ${intentLabel} (${Math.round(msg.confidence * 100)}%)${tools}`;
+  }
+
+  function onToolExecuting(msg) {
+    if (msg.chatId !== state.currentId) return;
+    let s = $("#messages").querySelector(".orchestrator-status");
+    if (!s) {
+      s = document.createElement("div");
+      s.className = "orchestrator-status";
+      s.style.cssText = "padding:8px 16px;font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:8px;";
+      $("#messages").appendChild(s);
+    }
+    s.innerHTML = `<div class="spinner" style="width:14px;height:14px"></div> Running ${OllamaMD.escape(msg.tool)}…`;
+    $("#messages").scrollTop = $("#messages").scrollHeight;
+  }
+
+  function onToolExecuted(msg) {
+    if (msg.chatId !== state.currentId) return;
+    let s = $("#messages").querySelector(".orchestrator-status");
+    if (s && !msg.success) {
+      s.innerHTML = `⚠ ${OllamaMD.escape(msg.tool)} failed`;
+      setTimeout(() => s.remove(), 2000);
+    }
   }
 
   function onSearchResults(msg) {

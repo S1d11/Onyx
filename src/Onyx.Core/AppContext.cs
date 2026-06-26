@@ -1,3 +1,4 @@
+using Ollama2.Orchestrator;
 using Ollama2.Services;
 
 namespace Ollama2;
@@ -31,6 +32,10 @@ public sealed class AppContext
         WebSearch = new WebSearchService();
         Chats = new ChatStore(Path.Combine(DataDir, "chats.json"));
         Chats.Load();
+
+        // Initialize the orchestrator with the built-in web search tool
+        Orchestrator = new OrchestratorService(Ollama, () => Config.Current.DefaultModel);
+        Orchestrator.Tools.Register(WebSearchTool.Definition, new WebSearchTool(WebSearch, Config.Current.MaxSearchResults));
     }
 
     public string DataDir { get; }
@@ -38,6 +43,7 @@ public sealed class AppContext
     public OllamaClient Ollama { get; }
     public WebSearchService WebSearch { get; }
     public ChatStore Chats { get; }
+    public OrchestratorService Orchestrator { get; }
 
     public void SaveAll()
     {

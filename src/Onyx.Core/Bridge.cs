@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Ollama2.Orchestrator;
 using Ollama2.Services;
 
 namespace Ollama2;
@@ -326,25 +327,78 @@ public sealed class Bridge
             if (cfg.ThinkingEnabled)
                 sendMessages.Insert(0, new ChatMessage { Role = "system", Content = "Think step-by-step. Break down complex problems, consider multiple angles, and explain your reasoning clearly before giving the final answer." });
 
-            // ---- Web search (replicates Ollama's built-in web search UX) ----
-            var shouldSearch = cfg.WebSearchEnabled && (webSearchMode == "on" || (webSearchMode == "auto" && NeedsWebSearch(lastUser)));
-            if (shouldSearch)
+            // ---- Orchestrator: extract intent and run tools ----
+            // The orchestrator uses the LLM to semantically understand the user's message,
+            // then decides which tools (web search, code exec, etc) to invoke.
+            var orchestrator = AppContext.Current.Orchestrator;
+
+            // Subscribe to orchestrator stage events for UI feedback
+            EventHandler<OrchestratorStageEventArgs>? stageHandler = (_, e) =>
+                PostToWeb(new { @event = "orchestratorStage", chatId, stage = e.Stage, message = e.Message });
+            EventHandler<Intent>? intentHandler = (_, intent) =>
+                PostToWeb(new { @event = "intent", chatId, intentType = intent.Type.ToString(), confidence = intent.Confidence, summary = intent.Summary, entities = intent.Entities, suggestedTools = intent.SuggestedTools });
+            EventHandler<ToolExecutionEventArgs>? toolExecHandler = (_, e) =>
+                PostToWeb(new { @event = "toolExecuting", chatId, tool = e.ToolName });
+            EventHandler<ToolResult>? toolResultHandler = (_, r) =>
+                PostToWeb(new { @event = "toolExecuted", chatId, tool = r.ToolName, success = r.Success });
+
+            orchestrator.StageChanged += stageHandler;
+            orchestrator.IntentExtracted += intentHandler;
+            orchestrator.ToolExecuting += toolExecHandler;
+            orchestrator.ToolExecuted += toolResultHandler;
+
+            OrchestratorPlan? plan = null;
+            try
             {
-                PostToWeb(new { @event = "searching", chatId, query = lastUser });
-                var search = await AppContext.Current.WebSearch.SearchAsync(lastUser, cfg.MaxSearchResults, ct);
-                sources = search.Results;
-
-                // Show source cards in the UI as they arrive (like Ollama).
-                PostToWeb(new { @event = "searchResults", chatId, query = search.Query, results = search.Results });
-
-                // Inject the search results as a tool/system message so the model
-                // can ground its answer and cite the sources inline.
-                var ctx = BuildSearchContext(search);
-                sendMessages.Add(new ChatMessage
+                // If web search is explicitly on, skip orchestrator intent extraction and search directly
+                if (webSearchMode == "on" && cfg.WebSearchEnabled)
                 {
-                    Role = "system",
-                    Content = ctx,
-                });
+                    PostToWeb(new { @event = "searching", chatId, query = lastUser });
+                    var search = await AppContext.Current.WebSearch.SearchAsync(lastUser, cfg.MaxSearchResults, ct);
+                    sources = search.Results;
+                    PostToWeb(new { @event = "searchResults", chatId, query = search.Query, results = search.Results });
+                    sendMessages.Add(new ChatMessage { Role = "system", Content = BuildSearchContext(search) });
+                }
+                else
+                {
+                    // Run the orchestrator: extract intent + execute tools
+                    (plan, var contextBlocks) = await orchestrator.OrchestrateAsync(lastUser, sendMessages, ct);
+
+                    // If the web search tool ran, extract sources for the UI
+                    if (plan.ToolsToRun.Contains("webSearch"))
+                    {
+                        foreach (var block in contextBlocks)
+                        {
+                            if (block.StartsWith("[webSearch result]"))
+                                sendMessages.Add(new ChatMessage { Role = "system", Content = block });
+                        }
+                        // Also do a direct search to get structured sources for the UI cards
+                        if (cfg.WebSearchEnabled)
+                        {
+                            PostToWeb(new { @event = "searching", chatId, query = lastUser });
+                            var search = await AppContext.Current.WebSearch.SearchAsync(lastUser, cfg.MaxSearchResults, ct);
+                            sources = search.Results;
+                            PostToWeb(new { @event = "searchResults", chatId, query = search.Query, results = search.Results });
+                        }
+                    }
+                    else
+                    {
+                        // Inject any other tool context blocks
+                        foreach (var block in contextBlocks)
+                            sendMessages.Add(new ChatMessage { Role = "system", Content = block });
+                    }
+
+                    // Apply intent-specific system prompt if the orchestrator provided one
+                    if (!string.IsNullOrEmpty(plan.SystemPromptOverride))
+                        sendMessages.Insert(0, new ChatMessage { Role = "system", Content = plan.SystemPromptOverride });
+                }
+            }
+            finally
+            {
+                orchestrator.StageChanged -= stageHandler;
+                orchestrator.IntentExtracted -= intentHandler;
+                orchestrator.ToolExecuting -= toolExecHandler;
+                orchestrator.ToolExecuted -= toolResultHandler;
             }
 
             var req = new ChatRequest
