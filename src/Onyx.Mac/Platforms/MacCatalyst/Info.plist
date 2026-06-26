@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Onyx</string>
+    <key>CFBundleDisplayName</key>
+    <string>Onyx</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.onyx.app</string>
+    <key>CFBundleVersion</key>
+    <string>2.17.1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>2.17</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+    <!-- Background app: no dock icon, no main menu bar -->
+    <key>LSUIElement</key>
+    <true/>
+    <!-- Allow running in background without a visible window -->
+    <key>LSBackgroundOnly</key>
+    <false/>
+    <!-- Support high resolution -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>

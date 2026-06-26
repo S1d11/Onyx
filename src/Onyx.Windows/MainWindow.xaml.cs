@@ -32,6 +32,13 @@ public partial class MainWindow : Window
         }
         _tray = new NotifyIconHelper(this);
         EnableDarkTitleBar();
+
+        // Start as background app if configured
+        if (AppContext.Current?.Config?.Current?.StartMinimized == true)
+        {
+            Hide();
+            _tray?.ShowBalloon("Onyx", "Onyx is running in the background. Click the tray icon to open.");
+        }
     }
 
     private void EnableDarkTitleBar()

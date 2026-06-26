@@ -28,6 +28,7 @@ public class AppConfig
     public string Effort { get; set; } = "medium"; // "low", "medium", "high", "max"
     public bool ThinkingEnabled { get; set; } = false;
     public bool AutoLaunchOllama { get; set; } = true;
+    public bool StartMinimized { get; set; } = true;
 }
 
 public class ModelInfo

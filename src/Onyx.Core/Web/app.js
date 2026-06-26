@@ -1218,6 +1218,15 @@
       };
     });
 
+    // Start minimized toggle
+    const minToggle = $("#toggleStartMinimized");
+    minToggle.classList.toggle("on", cfg.startMinimized !== false);
+    minToggle.onclick = () => {
+      const on = minToggle.classList.toggle("on");
+      if (state.config) { state.config.startMinimized = on; call("saveConfig", { config: state.config }); }
+      toast(on ? "App will start minimized" : "App will show window on start");
+    };
+
     // Effort buttons
     const eff = cfg.effort || "medium";
     $$("#effortOptions .pill-btn").forEach(btn => btn.classList.remove("selected"));
@@ -1252,7 +1261,7 @@
         temperature: 0.8, topK: 40, topP: 0.9, numCtx: 4096,
         systemPrompt: "", maxSearchResults: 5, closeBehavior: "tray",
         checkUpdatesOnStartup: true, exposeToNetwork: false, modelPath: "", stream: true,
-        effort: "medium", thinkingEnabled: false,
+        effort: "medium", thinkingEnabled: false, startMinimized: true,
       };
       state.config = { ...state.config, ...defaults };
       call("saveConfig", { config: state.config });
