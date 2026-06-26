@@ -1201,18 +1201,7 @@
   }
 
   function onIntent(msg) {
-    if (msg.chatId !== state.currentId) return;
-    // Show a subtle intent badge above the response
-    let badge = $("#messages").querySelector(".intent-badge");
-    if (!badge) {
-      badge = document.createElement("div");
-      badge.className = "intent-badge";
-      badge.style.cssText = "padding:4px 12px;font-size:11px;color:var(--text-muted);opacity:0.7;";
-      $("#messages").appendChild(badge);
-    }
-    const intentLabel = msg.intentType.replace(/([A-Z])/g, ' $1').trim();
-    const tools = msg.suggestedTools && msg.suggestedTools.length ? ` → ${msg.suggestedTools.join(", ")}` : "";
-    badge.textContent = `Intent: ${intentLabel} (${Math.round(msg.confidence * 100)}%)${tools}`;
+    // Intent extraction runs in the backend but is not displayed in the chat feed.
   }
 
   function onToolExecuting(msg) {
