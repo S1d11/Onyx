@@ -6,6 +6,7 @@
     config: null,
     chats: [],
     currentId: null,
+    draftChat: null,
     models: [],
     currentModel: "",
     streaming: false,
@@ -95,19 +96,67 @@
     state.chats.forEach(c => {
       const el = document.createElement("div");
       el.className = "chat-item" + (c.id === state.currentId ? " active" : "");
-      el.textContent = c.title;
-      const del = document.createElement("span");
-      del.className = "ci-del"; del.innerHTML = "&times;"; del.title = "Delete";
-      del.addEventListener("click", (ev) => { ev.stopPropagation(); deleteChat(c.id); });
-      el.appendChild(del);
+
+      const titleSpan = document.createElement("span");
+      titleSpan.className = "ci-title";
+      titleSpan.textContent = c.title;
+      titleSpan.title = "Double-click to rename";
+      titleSpan.addEventListener("dblclick", (ev) => {
+        ev.stopPropagation();
+        startRename(el, c);
+      });
+      el.appendChild(titleSpan);
+
+      const actions = document.createElement("span");
+      actions.className = "ci-actions";
+      actions.innerHTML = `
+        <button class="ci-rename" title="Rename">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+        <button class="ci-del" title="Delete">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      `;
+      actions.querySelector(".ci-rename").addEventListener("click", (ev) => { ev.stopPropagation(); startRename(el, c); });
+      actions.querySelector(".ci-del").addEventListener("click", (ev) => { ev.stopPropagation(); deleteChat(c.id); });
+      el.appendChild(actions);
+
       el.addEventListener("click", () => openChat(c.id));
       list.appendChild(el);
     });
   }
 
+  function startRename(el, c) {
+    const titleSpan = el.querySelector(".ci-title");
+    if (!titleSpan) return;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "ci-rename-input";
+    input.value = c.title;
+    input.style.width = titleSpan.offsetWidth + "px";
+    titleSpan.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const save = async () => {
+      const newTitle = input.value.trim();
+      if (newTitle && newTitle !== c.title) {
+        c.title = newTitle;
+        await call("renameChat", { id: c.id, title: newTitle });
+      }
+      renderChatList();
+    };
+
+    input.addEventListener("blur", save);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      else if (e.key === "Escape") { renderChatList(); }
+    });
+  }
+
   async function openChat(id) {
     state.currentId = id;
-    const c = state.chats.find(x => x.id === id);
+    const c = state.chats.find(x => x.id === id) || (state.draftChat && state.draftChat.id === id ? state.draftChat : null);
     if (!c) return;
     state.currentModel = c.model || state.currentModel;
     $("#modelLabel").textContent = state.currentModel || "Select a model";
@@ -217,11 +266,19 @@
     if (!state.currentModel) { toast("Select a model first"); return; }
 
     let chat = state.chats.find(c => c.id === state.currentId);
-    if (!chat) {
-      chat = await call("newChat", { model: state.currentModel });
-      state.chats.unshift(chat);
-      state.currentId = chat.id;
+
+    // If this is a draft chat, persist it first
+    if (!chat && state.draftChat && state.draftChat.id === state.currentId) {
+      const persisted = await call("newChat", { model: state.currentModel });
+      persisted.messages = [...state.draftChat.messages];
+      state.chats.unshift(persisted);
+      state.currentId = persisted.id;
+      chat = persisted;
+      state.draftChat = null;
+      renderChatList();
     }
+
+    if (!chat) return;
 
     const webSearch = $("#webSearchToggle").classList.contains("active");
     chat.messages.push({ role: "user", content: text });
@@ -262,7 +319,12 @@
     const c = state.chats.find(x => x.id === msg.chatId);
     if (c) {
       c.messages.push({ role: "assistant", content: text, sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
-      if (c.title === "New Chat") { c.title = deriveTitle(text); renderChatList(); }
+      if (c.title === "New Chat") {
+        const firstUser = c.messages.find(m => m.role === "user");
+        c.title = generateTitle(firstUser?.content || text);
+        call("renameChat", { id: c.id, title: c.title }).catch(() => {});
+        renderChatList();
+      }
     }
     state.pendingAssistantEl = null;
     state.pendingAssistantText = "";
@@ -313,12 +375,34 @@
     $("#stopBtn").classList.toggle("hidden", !on);
   }
 
-  function deriveTitle(text) {
-    const plain = text.replace(/[#*`>_~]/g, "").trim();
-    return plain.length > 48 ? plain.substring(0, 48) + "…" : plain || "New Chat";
+  function generateTitle(firstUserMessage) {
+    if (!firstUserMessage) return "New Chat";
+    // Strip markdown and clean up
+    let t = firstUserMessage.replace(/[#*`>_~\[\]\(\)\|]/g, "").trim();
+    // Remove common question/request prefixes
+    t = t.replace(/^(please\s+|can\s+you\s+|could\s+you\s+|how\s+(do|can|should)\s+i\s+|what\s+(is|are|does)\s+|explain\s+|tell\s+me\s+about\s+|write\s+|create\s+|generate\s+|make\s+|describe\s+|help\s+me\s+|show\s+me\s+how\s+to\s+)/i, "");
+    t = t.replace(/^(the\s+|a\s+|an\s+)/i, "");
+    t = t.trim();
+    if (!t) return "New Chat";
+    // Limit to ~6 words
+    const words = t.split(/\s+/);
+    if (words.length > 7) return words.slice(0, 6).join(" ") + "…";
+    // Capitalize first letter
+    return t.charAt(0).toUpperCase() + t.slice(1);
   }
 
   async function deleteChat(id) {
+    // Check if it's a draft
+    if (state.draftChat && state.draftChat.id === id) {
+      state.draftChat = null;
+      if (state.currentId === id) {
+        state.currentId = null;
+        $("#messages").innerHTML = "";
+        $("#emptyState").classList.remove("hidden");
+      }
+      renderChatList();
+      return;
+    }
     await call("deleteChat", { id });
     state.chats = state.chats.filter(c => c.id !== id);
     if (state.currentId === id) {
@@ -657,12 +741,18 @@
   }
 
   async function newChat() {
-    const chat = await call("newChat", { model: state.currentModel });
-    state.chats.unshift(chat);
+    // Create a draft chat in-memory only — not persisted until first message is sent
+    state.draftChat = {
+      id: "draft-" + Date.now().toString(36),
+      title: "New Chat",
+      model: state.currentModel,
+      messages: [],
+    };
+    state.currentId = state.draftChat.id;
     showView("chat");
-    openChat(chat.id);
-    $("#emptyState").classList.remove("hidden");
+    renderChatList();
     $("#messages").innerHTML = "";
+    $("#emptyState").classList.remove("hidden");
     $("#promptInput").focus();
   }
 
