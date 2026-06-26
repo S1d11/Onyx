@@ -26,6 +26,7 @@ public class OrchestratorService
     private readonly IntentExtractor _extractor;
     private readonly ToolRegistry _tools;
     private readonly OllamaClient _ollama;
+    private readonly SemanticRouter _router;
 
     /// <summary>Raised when the orchestrator starts extracting intent. UI can show "Analyzing...".</summary>
     public event EventHandler<OrchestratorStageEventArgs>? StageChanged;
@@ -40,11 +41,13 @@ public class OrchestratorService
     public event EventHandler<ToolResult>? ToolExecuted;
 
     public ToolRegistry Tools => _tools;
+    public SemanticRouter Router => _router;
 
     public OrchestratorService(OllamaClient ollama, Func<string> getModel)
     {
         _ollama = ollama;
         _tools = new ToolRegistry();
+        _router = new SemanticRouter(ollama, getModel, _tools);
         _extractor = new IntentExtractor(ollama, getModel, _tools);
     }
 
@@ -73,8 +76,8 @@ public class OrchestratorService
 
         var plan = new OrchestratorPlan { Intent = intent };
 
-        // Determine which tools to run based on intent + suggestions
-        plan.ToolsToRun = DetermineTools(intent);
+        // Determine which tools to run based on intent + semantic routing
+        plan.ToolsToRun = await DetermineToolsAsync(intent, userMessage, ct);
 
         // Intent-specific system prompt overrides
         plan.SystemPromptOverride = GetSystemPromptForIntent(intent);
@@ -163,8 +166,12 @@ public class OrchestratorService
         return (plan, context);
     }
 
-    /// <summary>Decide which tools to run based on the extracted intent.</summary>
-    private List<string> DetermineTools(Intent intent)
+    /// <summary>
+    /// Decide which tools to run based on the extracted intent + semantic routing.
+    /// Uses embeddings (cosine similarity) to match the user's message to the best tool —
+    /// no keyword matching involved.
+    /// </summary>
+    private async Task<List<string>> DetermineToolsAsync(Intent intent, string userMessage, CancellationToken ct)
     {
         var tools = new List<string>();
 
@@ -182,28 +189,31 @@ public class OrchestratorService
         if (intent.Type == IntentType.Code && _tools.IsAvailable("codeExecutor"))
             tools.AddIfMissing("codeExecutor");
 
-        // ToolUse intent: route to the specified tool
-        if (intent.Type == IntentType.ToolUse && !string.IsNullOrEmpty(intent.TargetTool))
+        // ToolUse intent: use semantic routing to find the best tool
+        if (intent.Type == IntentType.ToolUse)
         {
-            if (_tools.IsAvailable(intent.TargetTool!))
+            // If the LLM already named a specific valid tool, use it
+            if (!string.IsNullOrEmpty(intent.TargetTool) && _tools.IsAvailable(intent.TargetTool!))
+            {
                 tools.AddIfMissing(intent.TargetTool!);
-        }
-
-        // Safety net: if the LLM said toolUse but didn't specify a target tool,
-        // try to guess based on keywords in the summary
-        if (intent.Type == IntentType.ToolUse && string.IsNullOrEmpty(intent.TargetTool))
-        {
-            var lower = (intent.Summary ?? "").ToLowerInvariant();
-            if ((lower.Contains("email") || lower.Contains("mail") || lower.Contains("inbox")) && _tools.IsAvailable("gmail"))
-                tools.AddIfMissing("gmail");
-            else if ((lower.Contains("drive") || lower.Contains("cloud file")) && _tools.IsAvailable("gdrive"))
-                tools.AddIfMissing("gdrive");
-            else if ((lower.Contains("github") || lower.Contains("repo") || lower.Contains("repository")) && _tools.IsAvailable("github"))
-                tools.AddIfMissing("github");
-            else if ((lower.Contains("file") || lower.Contains("folder") || lower.Contains("directory")) && _tools.IsAvailable("filesystem"))
-                tools.AddIfMissing("filesystem");
-            else if (_tools.IsAvailable("system"))
-                tools.AddIfMissing("system");
+            }
+            else
+            {
+                // Semantic search: embed the user message and match to tool embeddings
+                OnStage("routing", "Finding the right tool...");
+                var semanticMatch = await _router.MatchToolAsync(userMessage, threshold: 0.30, ct: ct);
+                if (!string.IsNullOrEmpty(semanticMatch))
+                {
+                    tools.AddIfMissing(semanticMatch);
+                }
+                else
+                {
+                    // Last resort: try semantic match on the summary instead of full message
+                    var summaryMatch = await _router.MatchToolAsync(intent.Summary ?? userMessage, threshold: 0.25, ct: ct);
+                    if (!string.IsNullOrEmpty(summaryMatch))
+                        tools.AddIfMissing(summaryMatch);
+                }
+            }
         }
 
         // Only auto-execute if the intent says so.

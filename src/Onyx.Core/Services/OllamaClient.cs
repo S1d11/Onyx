@@ -130,6 +130,33 @@ public class OllamaClient
         r.EnsureSuccessStatusCode();
         return JsonSerializer.Deserialize<ChatChunk>(await r.Content.ReadAsStringAsync(ct)) ?? new();
     }
+
+    /// <summary>
+    /// Generate an embedding vector for the given text using Ollama's /api/embeddings endpoint.
+    /// Works with any model; for best results use a dedicated embedding model like nomic-embed-text.
+    /// </summary>
+    public async Task<float[]?> EmbedAsync(string text, string model, CancellationToken ct = default)
+    {
+        var body = JsonSerializer.Serialize(new { model, prompt = text });
+        using var c = new StringContent(body, Encoding.UTF8, "application/json");
+        using var r = await Http.PostAsync($"{Base}/api/embeddings", c, ct);
+        if (!r.IsSuccessStatusCode) return null;
+        var json = await r.Content.ReadAsStringAsync(ct);
+        using var doc = JsonDocument.Parse(json);
+        if (!doc.RootElement.TryGetProperty("embedding", out var emb)) return null;
+        var result = new float[emb.GetArrayLength()];
+        int i = 0;
+        foreach (var v in emb.EnumerateArray())
+            result[i++] = v.GetSingle();
+        return result;
+    }
+
+    /// <summary>Check if a model is installed locally.</summary>
+    public async Task<bool> IsModelInstalledAsync(string modelName, CancellationToken ct = default)
+    {
+        var models = await ListModelsAsync();
+        return models.Any(m => string.Equals(m.Name, modelName, StringComparison.OrdinalIgnoreCase));
+    }
 }
 
 public class PullProgress
