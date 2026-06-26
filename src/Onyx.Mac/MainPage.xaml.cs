@@ -108,8 +108,8 @@ public partial class MainPage : ContentPage
         Directory.CreateDirectory(root);
 
         var asm = typeof(AppContext).Assembly;
-        var coreNs = typeof(AppContext).Namespace;
-        var manifestName = coreNs + ".Web.manifest.txt";
+        var resPrefix = asm.GetName().Name + ".Web";
+        var manifestName = resPrefix + ".manifest.txt";
 
         using var manifestStream = asm.GetManifestResourceStream(manifestName);
         if (manifestStream == null) return root;
@@ -122,7 +122,7 @@ public partial class MainPage : ContentPage
             var relPath = line.Trim();
             var dest = Path.Combine(root, relPath.Replace('/', Path.DirectorySeparatorChar));
             Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-            var resName = coreNs + ".Web." + relPath.Replace('/', '.');
+            var resName = resPrefix + "." + relPath.Replace('/', '.');
             using var s = asm.GetManifestResourceStream(resName);
             if (s == null) continue;
             using var f = File.Create(dest);
