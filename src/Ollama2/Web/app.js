@@ -1,4 +1,4 @@
-// Ollama UI controller. Bridges the DOM to the C# backend via WebView2 messaging.
+// Ollama 2.0 UI controller
 (function () {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -12,8 +12,6 @@
     streaming: false,
     pendingAssistantEl: null,
     pendingAssistantText: "",
-    pendingSources: null,
-    searching: false,
   };
 
   let rpcId = 0;
@@ -29,7 +27,6 @@
     window.chrome.webview.postMessage(JSON.stringify({ action, ...payload }));
   }
 
-  // ---- incoming messages from C# ----
   window.chrome.webview.addEventListener("message", (e) => {
     const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
     if (msg.id && pending.has(msg.id)) {
@@ -52,19 +49,17 @@
       case "pullProgress": onPullProgress(msg); break;
       case "pullDone": onPullDone(msg); break;
       case "pullCancelled": onPullCancelled(msg); break;
-      case "pullError": alert("Pull failed: " + msg.message); break;
-      case "menu": onMenuEvent(msg.action); break;
+      case "pullError": toast("Pull failed: " + msg.message); break;
       case "error": toast(msg.message); break;
     }
   }
 
-  // ---- bootstrap ----
   async function init() {
     bindUI();
     bindKeyboard();
     const data = await call("getInitialState");
     onInitialState(data);
-    await call("listModels").then(m => { state.models = m; renderModelMenu(); }).catch(() => {});
+    call("listModels").then(m => { state.models = m; renderModelMenu(); }).catch(() => {});
   }
 
   function onInitialState(data) {
@@ -72,42 +67,30 @@
     state.chats = data.chats || [];
     if (state.config) {
       state.currentModel = state.config.defaultModel;
-      document.documentElement.setAttribute("data-theme", state.config.theme || "dark");
       $("#webSearchCheckbox").checked = !!state.config.webSearchEnabled;
       updateWebSearchToggle();
       if (!state.config.sidebarVisible) $("#sidebar").classList.add("collapsed");
     }
     renderChatList();
     if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
-    if (!data.serverReachable) toast("Ollama server not reachable at " + (state.config?.serverUrl || "localhost:11434") + ". Is `ollama serve` running?");
+    if (!data.serverReachable) toast("Ollama server not reachable. Is `ollama serve` running?");
   }
 
   // ---- chat list ----
   function renderChatList() {
-    const q = ($("#searchInput").value || "").toLowerCase();
     const list = $("#chatList");
     list.innerHTML = "";
-    state.chats
-      .filter(c => !q || c.title.toLowerCase().includes(q))
-      .forEach(c => {
-        const el = document.createElement("div");
-        el.className = "chat-item" + (c.id === state.currentId ? " active" : "");
-        el.innerHTML = `<div class="ci-title">${OllamaMD.escape(c.title)}</div>
-          <div class="ci-meta"><span>${c.model || ""}</span><span>·</span><span>${timeAgo(c.updatedAt)}</span></div>
-          <button class="ci-del" title="Delete">&times;</button>`;
-        el.addEventListener("click", () => openChat(c.id));
-        el.querySelector(".ci-del").addEventListener("click", (ev) => { ev.stopPropagation(); deleteChat(c.id); });
-        list.appendChild(el);
-      });
-  }
-
-  function timeAgo(ts) {
-    if (!ts) return "";
-    const s = Math.floor(Date.now() / 1000 - ts);
-    if (s < 60) return "just now";
-    if (s < 3600) return Math.floor(s / 60) + "m";
-    if (s < 86400) return Math.floor(s / 3600) + "h";
-    return Math.floor(s / 86400) + "d";
+    state.chats.forEach(c => {
+      const el = document.createElement("div");
+      el.className = "chat-item" + (c.id === state.currentId ? " active" : "");
+      el.textContent = c.title;
+      const del = document.createElement("span");
+      del.className = "ci-del"; del.innerHTML = "&times;"; del.title = "Delete";
+      del.addEventListener("click", (ev) => { ev.stopPropagation(); deleteChat(c.id); });
+      el.appendChild(del);
+      el.addEventListener("click", () => openChat(c.id));
+      list.appendChild(el);
+    });
   }
 
   async function openChat(id) {
@@ -131,11 +114,10 @@
     const m = $("#messages");
     const wrap = document.createElement("div");
     wrap.className = "msg " + role;
-    const avatar = role === "user" ? "You" : "O";
     const bodyHtml = opts.error
       ? `<div class="msg-error">${OllamaMD.escape(opts.error)}</div>`
       : (role === "user" ? OllamaMD.escape(content).replace(/\n/g, "<br>") : OllamaMD.render(content));
-    wrap.innerHTML = `<div class="msg-avatar">${avatar}</div><div class="msg-body">${bodyHtml}</div>`;
+    wrap.innerHTML = `<div class="msg-role">${role}</div><div class="msg-body">${bodyHtml}</div>`;
     if (opts.sources && opts.sources.length) wrap.querySelector(".msg-body").appendChild(buildSourcesEl(opts.sources, true));
     if (role === "assistant" && !opts.error) appendMsgActions(wrap, content, opts);
     m.appendChild(wrap);
@@ -181,7 +163,7 @@
     state.models.forEach(mo => {
       const it = document.createElement("div");
       it.className = "model-item" + (mo.name === state.currentModel ? " selected" : "");
-      it.innerHTML = `<div class="mi-name">${OllamaMD.escape(mo.name)}</div><div class="mi-meta">${formatSize(mo.size)} · ${mo.details || ""}</div>`;
+      it.innerHTML = `<div class="mi-name">${OllamaMD.escape(mo.name)}</div><div class="mi-meta">${formatSize(mo.size)}</div>`;
       it.addEventListener("click", () => { selectModel(mo.name); closeModelMenu(); });
       menu.appendChild(it);
     });
@@ -203,16 +185,13 @@
   function selectModel(name) {
     state.currentModel = name;
     $("#modelLabel").textContent = name;
-    if (state.currentId) {
-      const c = state.chats.find(x => x.id === state.currentId);
-      if (c) c.model = name;
-    }
+    if (state.currentId) { const c = state.chats.find(x => x.id === state.currentId); if (c) c.model = name; }
     renderModelMenu();
   }
 
   function closeModelMenu() { $("#modelMenu").classList.add("hidden"); }
 
-  // ---- send message / streaming ----
+  // ---- send / stream ----
   async function send() {
     const input = $("#promptInput");
     const text = input.value.trim();
@@ -232,17 +211,13 @@
     $("#emptyState").classList.add("hidden");
     input.value = ""; autoGrow();
 
-    // assistant placeholder
     const el = appendMessageEl("assistant", "");
-    const body = el.querySelector(".msg-body");
-    body.innerHTML = '<span class="cursor"></span>';
+    el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
     state.pendingAssistantEl = el;
     state.pendingAssistantText = "";
-    state.pendingSources = null;
     state.streaming = true;
     setStreamingUI(true);
 
-    // build message history for the server (exclude the placeholder)
     const history = chat.messages
       .filter(m => m.role === "user" || (m.role === "assistant" && m.content))
       .map(m => ({ role: m.role, content: m.content }));
@@ -257,8 +232,7 @@
   function onChatChunk(msg) {
     if (!state.pendingAssistantEl) return;
     state.pendingAssistantText += msg.content;
-    const body = state.pendingAssistantEl.querySelector(".msg-body");
-    body.innerHTML = OllamaMD.render(state.pendingAssistantText) + '<span class="cursor"></span>';
+    state.pendingAssistantEl.querySelector(".msg-body").innerHTML = OllamaMD.render(state.pendingAssistantText) + '<span class="cursor"></span>';
     $("#messages").scrollTop = $("#messages").scrollHeight;
   }
 
@@ -266,12 +240,10 @@
     state.streaming = false;
     setStreamingUI(false);
     if (!state.pendingAssistantEl) return;
-    const body = state.pendingAssistantEl.querySelector(".msg-body");
     const text = state.pendingAssistantText;
-    body.innerHTML = OllamaMD.render(text);
-    if (msg.sources && msg.sources.length) body.appendChild(buildSourcesEl(msg.sources, true));
+    state.pendingAssistantEl.querySelector(".msg-body").innerHTML = OllamaMD.render(text);
+    if (msg.sources && msg.sources.length) state.pendingAssistantEl.querySelector(".msg-body").appendChild(buildSourcesEl(msg.sources, true));
     appendMsgActions(state.pendingAssistantEl, text, { evalCount: msg.evalCount, totalMs: msg.totalMs });
-    // persist into local chat object
     const c = state.chats.find(x => x.id === msg.chatId);
     if (c) {
       c.messages.push({ role: "assistant", content: text, sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
@@ -287,18 +259,12 @@
     if (state.pendingAssistantEl) {
       state.pendingAssistantEl.querySelector(".msg-body").innerHTML = `<div class="msg-error">${OllamaMD.escape(msg.message)}</div>`;
       state.pendingAssistantEl = null;
-    } else {
-      toast(msg.message);
-    }
+    } else { toast(msg.message); }
   }
 
   function onSearching(msg) {
-    state.searching = true;
     let s = $("#messages").querySelector(".search-status");
-    if (!s) {
-      s = document.createElement("div"); s.className = "search-status";
-      $("#messages").appendChild(s);
-    }
+    if (!s) { s = document.createElement("div"); s.className = "search-status"; $("#messages").appendChild(s); }
     s.innerHTML = `<div class="spinner"></div> Searching the web for "${OllamaMD.escape(msg.query)}"…`;
     $("#messages").scrollTop = $("#messages").scrollHeight;
   }
@@ -307,18 +273,15 @@
     const s = $("#messages").querySelector(".search-status");
     if (s) s.remove();
     if (msg.results && msg.results.length) {
-      const el = buildSourcesEl(msg.results, false);
-      $("#messages").appendChild(el);
+      $("#messages").appendChild(buildSourcesEl(msg.results, false));
       $("#messages").scrollTop = $("#messages").scrollHeight;
     }
-    state.pendingSources = msg.results;
   }
 
   function regenerate() {
     if (state.streaming) return;
     const c = state.chats.find(x => x.id === state.currentId);
     if (!c) return;
-    // drop last assistant message
     while (c.messages.length && c.messages[c.messages.length - 1].role === "assistant") c.messages.pop();
     renderMessages(c);
     const history = c.messages.map(m => ({ role: m.role, content: m.content }));
@@ -360,10 +323,11 @@
   }
   function closeModal() { $("#modalRoot").classList.add("hidden"); $("#modalRoot").innerHTML = ""; }
 
-  function showSettingsModal(tab = "general") {
+  function showSettingsModal(tab) {
+    tab = tab || "general";
     const c = state.config;
     modal(`
-      <div class="modal-header">Settings <button class="icon-btn" id="closeModal">&times;</button></div>
+      <div class="modal-header">Settings <button class="close-btn" id="closeModal">&times;</button></div>
       <div class="modal-body">
         <div class="tabs">
           <button class="tab" data-tab="general">General</button>
@@ -372,10 +336,8 @@
           <button class="tab" data-tab="server">Server</button>
         </div>
         <div data-pane="general">
-          <div class="field"><label>Theme</label><select id="cfgTheme"><option value="dark">Dark</option><option value="light">Light</option></select></div>
           <div class="field"><label>Default model</label><input type="text" id="cfgDefaultModel" /></div>
           <div class="field"><label>System prompt</label><textarea id="cfgSystem"></textarea></div>
-          <div class="field"><label>Zoom</label><input type="number" id="cfgZoom" step="0.1" min="0.25" max="5" /></div>
         </div>
         <div data-pane="model" class="hidden">
           <div class="row">
@@ -388,7 +350,7 @@
           </div>
         </div>
         <div data-pane="web" class="hidden">
-          <div class="field"><label class="checkbox-line"><input type="checkbox" id="cfgWsEnabled" /> Enable built-in web search</label></div>
+          <div class="field"><label class="web-search-label"><input type="checkbox" id="cfgWsEnabled" /> Enable built-in web search</label></div>
           <div class="field"><label>Search provider</label><select id="cfgWsProvider"><option value="duckduckgo">DuckDuckGo (no key)</option><option value="brave">Brave (key)</option><option value="tavily">Tavily (key)</option></select></div>
           <div class="field"><label>API key (optional)</label><input type="text" id="cfgWsKey" placeholder="Only for Brave/Tavily" /></div>
           <div class="field"><label>Max results</label><input type="number" id="cfgWsMax" min="1" max="20" /></div>
@@ -400,8 +362,8 @@
       </div>
       <div class="modal-footer"><button class="btn" id="cancelSettings">Cancel</button><button class="btn primary" id="saveSettings">Save</button></div>
     `);
-    $("#cfgTheme").value = c.theme; $("#cfgDefaultModel").value = c.defaultModel; $("#cfgSystem").value = c.systemPrompt;
-    $("#cfgZoom").value = c.zoom; $("#cfgTemp").value = c.temperature; $("#cfgTopK").value = c.topK;
+    $("#cfgDefaultModel").value = c.defaultModel; $("#cfgSystem").value = c.systemPrompt;
+    $("#cfgTemp").value = c.temperature; $("#cfgTopK").value = c.topK;
     $("#cfgTopP").value = c.topP; $("#cfgCtx").value = c.numCtx; $("#cfgWsEnabled").checked = c.webSearchEnabled;
     $("#cfgWsProvider").value = c.webSearchProvider || "duckduckgo"; $("#cfgWsKey").value = c.webSearchApiKey || "";
     $("#cfgWsMax").value = c.maxSearchResults; $("#cfgServer").value = c.serverUrl;
@@ -420,8 +382,8 @@
       const cfg = {
         serverUrl: $("#cfgServer").value, defaultModel: $("#cfgDefaultModel").value,
         webSearchEnabled: $("#cfgWsEnabled").checked, webSearchProvider: $("#cfgWsProvider").value,
-        webSearchApiKey: $("#cfgWsKey").value, theme: $("#cfgTheme").value,
-        sidebarVisible: state.config.sidebarVisible, zoom: parseFloat($("#cfgZoom").value) || 1,
+        webSearchApiKey: $("#cfgWsKey").value, theme: "dark",
+        sidebarVisible: state.config.sidebarVisible, zoom: 1,
         temperature: parseFloat($("#cfgTemp").value) || 0.8, topK: parseInt($("#cfgTopK").value) || 40,
         topP: parseFloat($("#cfgTopP").value) || 0.9, numCtx: parseInt($("#cfgCtx").value) || 4096,
         systemPrompt: $("#cfgSystem").value, maxSearchResults: parseInt($("#cfgWsMax").value) || 5,
@@ -429,7 +391,6 @@
       };
       await call("saveConfig", { config: cfg });
       state.config = cfg;
-      document.documentElement.setAttribute("data-theme", cfg.theme);
       closeModal();
       toast("Settings saved");
     };
@@ -437,10 +398,10 @@
 
   function showModelsModal() {
     modal(`
-      <div class="modal-header">Manage Models <button class="icon-btn" id="closeModal">&times;</button></div>
+      <div class="modal-header">Models <button class="close-btn" id="closeModal">&times;</button></div>
       <div class="modal-body">
-        <button class="btn primary" id="refreshModels">Refresh</button> <button class="btn" id="pullFromLib">Pull from library…</button>
-        <div id="modelsList" style="margin-top:14px"></div>
+        <div style="margin-bottom:12px"><button class="btn" id="refreshModels">Refresh</button> <button class="btn primary" id="pullFromLib">Pull from library…</button></div>
+        <div id="modelsList"></div>
       </div>
       <div class="modal-footer"><button class="btn" id="closeModels">Close</button></div>
     `);
@@ -449,7 +410,7 @@
       if (!state.models.length) { list.innerHTML = '<div class="kv-val">No models installed. Pull one from the library.</div>'; return; }
       state.models.forEach(m => {
         const row = document.createElement("div"); row.className = "kv-row";
-        row.innerHTML = `<div><div>${OllamaMD.escape(m.name)}</div><div class="kv-val">${formatSize(m.size)} · ${OllamaMD.escape(m.digest).substring(0,12)}</div></div><div><button class="btn danger" data-del="${OllamaMD.escape(m.name)}">Delete</button></div>`;
+        row.innerHTML = `<div><div>${OllamaMD.escape(m.name)}</div><div class="kv-val">${formatSize(m.size)}</div></div><div><button class="btn danger" data-del="${OllamaMD.escape(m.name)}">Delete</button></div>`;
         list.appendChild(row);
       });
       $$("[data-del]").forEach(b => b.addEventListener("click", async () => {
@@ -469,13 +430,13 @@
   function showPullModal() {
     const popular = ["llama3.2", "llama3.2:1b", "qwen2.5", "phi3", "mistral", "gemma2", "deepseek-r1", "llava", "nomic-embed-text"];
     modal(`
-      <div class="modal-header">Pull Model <button class="icon-btn" id="closeModal">&times;</button></div>
+      <div class="modal-header">Pull Model <button class="close-btn" id="closeModal">&times;</button></div>
       <div class="modal-body">
         <div class="field"><label>Model name</label><input type="text" id="pullName" placeholder="e.g. llama3.2" list="pullList" />
           <datalist id="pullList">${popular.map(p => `<option value="${p}">`).join("")}</datalist></div>
         <div class="pull-progress"><div class="bar" id="pullBar"></div></div>
         <div id="pullStatus" class="kv-val"></div>
-        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank">Browse the model library ↗</a></div>
+        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:#6cb6ff">Browse the model library ↗</a></div>
       </div>
       <div class="modal-footer"><button class="btn" id="cancelPull">Cancel</button><button class="btn primary" id="doPull">Pull</button></div>
     `);
@@ -495,83 +456,9 @@
   function onPullDone(msg) { if ($("#pullStatus")) { $("#pullStatus").textContent = "Done: " + msg.name; $("#doPull") && ($("#doPull").disabled = false); } toast("Pulled " + msg.name); refreshModels(); }
   function onPullCancelled(msg) { if ($("#pullStatus")) $("#pullStatus").textContent = "Cancelled"; if ($("#doPull")) $("#doPull").disabled = false; }
 
-  function showShortcutsModal() {
-    const rows = [
-      ["New chat", "Ctrl+N"], ["Toggle sidebar", "Ctrl+B"], ["Open chat", "Ctrl+O"],
-      ["Send message", "Enter"], ["Newline in composer", "Shift+Enter"], ["Stop generation", "Esc"],
-      ["Zoom in / out / reset", "Ctrl+ +/−/0"], ["Reload", "Ctrl+R"], ["Dev tools", "F12"],
-      ["Preferences", "Ctrl+,"], ["Copy code block", "Copy button on block"],
-    ];
-    modal(`<div class="modal-header">Keyboard Shortcuts <button class="icon-btn" id="closeModal">&times;</button></div>
-      <div class="modal-body">${rows.map(r => `<div class="shortcut-row"><span>${r[0]}</span><kbd>${r[1]}</kbd></div>`).join("")}</div>
-      <div class="modal-footer"><button class="btn" id="ok">Close</button></div>`);
-    $("#closeModal").onclick = closeModal; $("#ok").onclick = closeModal;
-  }
-
-  // ---- menu events from native menu bar ----
-  function onMenuEvent(action) {
-    switch (action) {
-      case "newChat": newChat(); break;
-      case "openChat": toast("Use the sidebar to open a chat"); break;
-      case "exportChat": exportChat(); break;
-      case "importChat": toast("Import via the chat file"); break;
-      case "clearConversation": clearConversation(); break;
-      case "deleteChat": if (state.currentId) deleteChat(state.currentId); break;
-      case "toggleSidebar": $("#sidebar").classList.toggle("collapsed"); break;
-      case "toggleTheme": toggleTheme(); break;
-      case "pullModel": showPullModal(); break;
-      case "deleteModel": showModelsModal(); break;
-      case "manageModels": showModelsModal(); break;
-      case "preferences": showSettingsModal("general"); break;
-      case "serverSettings": showSettingsModal("server"); break;
-      case "shortcuts": showShortcutsModal(); break;
-      case "checkUpdates": toast("You're on the latest version"); break;
-      case "editUndo": document.execCommand("undo"); break;
-      case "editRedo": document.execCommand("redo"); break;
-      case "editCut": document.execCommand("cut"); break;
-      case "editCopy": document.execCommand("copy"); break;
-      case "editPaste": document.execCommand("paste"); break;
-      case "editSelectAll": document.execCommand("selectAll"); break;
-    }
-  }
-
-  async function newChat() {
-    const chat = await call("newChat", { model: state.currentModel });
-    state.chats.unshift(chat);
-    openChat(chat.id);
-    $("#emptyState").classList.remove("hidden");
-    $("#promptInput").focus();
-  }
-
-  async function exportChat() {
-    if (!state.currentId) return;
-    const json = await call("exportChat", { id: state.currentId });
-    const blob = new Blob([json], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = "ollama-chat.json"; a.click();
-  }
-
-  function clearConversation() {
-    const c = state.chats.find(x => x.id === state.currentId);
-    if (c) { c.messages = []; renderMessages(c); $("#emptyState").classList.remove("hidden"); }
-  }
-
-  function toggleTheme() {
-    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    state.config.theme = next;
-    call("saveConfig", { config: state.config });
-  }
-
-  function updateWebSearchToggle() {
-    const on = $("#webSearchCheckbox").checked;
-    $("#webSearchToggle").classList.toggle("active", on);
-  }
-
   // ---- UI binding ----
   function bindUI() {
     $("#newChatBtn").addEventListener("click", newChat);
-    $("#searchInput").addEventListener("input", renderChatList);
     $("#sidebarToggle").addEventListener("click", () => $("#sidebar").classList.toggle("collapsed"));
     $("#settingsBtn").addEventListener("click", () => showSettingsModal("general"));
     $("#manageModelsBtn").addEventListener("click", showModelsModal);
@@ -579,7 +466,6 @@
     document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) closeModelMenu(); });
     $("#webSearchToggle").addEventListener("click", () => { $("#webSearchCheckbox").checked = !$("#webSearchCheckbox").checked; updateWebSearchToggle(); });
     $("#webSearchCheckbox").addEventListener("change", updateWebSearchToggle);
-    $("#menuBtn").addEventListener("click", () => showShortcutsModal());
     $("#sendBtn").addEventListener("click", send);
     $("#stopBtn").addEventListener("click", stopGeneration);
     const input = $("#promptInput");
@@ -589,8 +475,7 @@
     });
     $$(".suggestion").forEach(s => s.addEventListener("click", () => {
       input.value = s.dataset.prompt; autoGrow(); input.focus();
-      if (s.dataset.prompt.toLowerCase().includes("latest")) $("#webSearchCheckbox").checked = true;
-      updateWebSearchToggle();
+      if (s.dataset.web) { $("#webSearchCheckbox").checked = true; updateWebSearchToggle(); }
     }));
   }
 
@@ -603,15 +488,25 @@
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === "n") { e.preventDefault(); newChat(); }
       else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); }
-      else if (ctrl && e.key === ",") { e.preventDefault(); showSettingsModal("general"); }
       else if (e.key === "Escape" && state.streaming) { stopGeneration(); }
     });
   }
 
-  // ---- helpers ----
+  async function newChat() {
+    const chat = await call("newChat", { model: state.currentModel });
+    state.chats.unshift(chat);
+    openChat(chat.id);
+    $("#emptyState").classList.remove("hidden");
+    $("#promptInput").focus();
+  }
+
+  function updateWebSearchToggle() {
+    $("#webSearchToggle").classList.toggle("active", $("#webSearchCheckbox").checked);
+  }
+
   function toast(msg) {
     let t = $("#toast");
-    if (!t) { t = document.createElement("div"); t.id = "toast"; t.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface-2);color:var(--text);padding:10px 16px;border-radius:8px;border:1px solid var(--border);font-size:13px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.4)"; document.body.appendChild(t); }
+    if (!t) { t = document.createElement("div"); t.id = "toast"; t.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1f1f;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;border:1px solid #2a2a2a"; document.body.appendChild(t); }
     t.textContent = msg; t.style.opacity = "1"; t.style.display = "block";
     clearTimeout(t._h); t._h = setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.style.display = "none", 200); }, 3000);
   }

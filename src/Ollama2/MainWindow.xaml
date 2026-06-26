@@ -6,69 +6,13 @@
         Height="800" Width="1200"
         MinHeight="500" MinWidth="720"
         WindowStartupLocation="CenterScreen"
-        Background="#0B0D0F"
+        Background="#000000"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         StateChanged="Window_StateChanged"
         Closing="Window_Closing"
         Loaded="Window_Loaded">
-    <DockPanel>
-        <!-- Native Win32 menu bar -->
-        <Menu DockPanel.Dock="Top" Background="#15181C" Foreground="#E6E6E6" Padding="6,4">
-            <MenuItem Header="_File" Foreground="#E6E6E6">
-                <MenuItem Header="New _Chat" InputGestureText="Ctrl+N" Click="NewChat_Click"/>
-                <MenuItem Header="New _Window" Click="NewWindow_Click"/>
-                <MenuItem Header="_Open Chat..." InputGestureText="Ctrl+O" Click="OpenChat_Click"/>
-                <Separator/>
-                <MenuItem Header="_Export Chat..." Click="ExportChat_Click"/>
-                <MenuItem Header="_Import Chat..." Click="ImportChat_Click"/>
-                <Separator/>
-                <MenuItem Header="E_xit" Click="Exit_Click"/>
-            </MenuItem>
-            <MenuItem Header="_Edit" Foreground="#E6E6E6">
-                <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Click="Edit_Undo"/>
-                <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Click="Edit_Redo"/>
-                <Separator/>
-                <MenuItem Header="Cu_t" InputGestureText="Ctrl+X" Click="Edit_Cut"/>
-                <MenuItem Header="_Copy" InputGestureText="Ctrl+C" Click="Edit_Copy"/>
-                <MenuItem Header="_Paste" InputGestureText="Ctrl+V" Click="Edit_Paste"/>
-                <MenuItem Header="Select _All" InputGestureText="Ctrl+A" Click="Edit_SelectAll"/>
-                <Separator/>
-                <MenuItem Header="_Clear Conversation" Click="ClearConversation_Click"/>
-                <MenuItem Header="_Delete Chat" Click="DeleteChat_Click"/>
-            </MenuItem>
-            <MenuItem Header="_View" Foreground="#E6E6E6">
-                <MenuItem Header="Toggle _Sidebar" InputGestureText="Ctrl+B" Click="ToggleSidebar_Click"/>
-                <MenuItem Header="_Zoom In" InputGestureText="Ctrl++" Click="ZoomIn_Click"/>
-                <MenuItem Header="Zoom _Out" InputGestureText="Ctrl+-" Click="ZoomOut_Click"/>
-                <MenuItem Header="_Actual Size" InputGestureText="Ctrl+0" Click="ZoomReset_Click"/>
-                <Separator/>
-                <MenuItem Header="_Toggle Theme" Click="ToggleTheme_Click"/>
-                <MenuItem Header="_Reload" InputGestureText="Ctrl+R" Click="Reload_Click"/>
-                <MenuItem Header="Toggle _Developer Tools" InputGestureText="F12" Click="DevTools_Click"/>
-            </MenuItem>
-            <MenuItem Header="_Model" Foreground="#E6E6E6">
-                <MenuItem Header="_Pull Model..." Click="PullModel_Click"/>
-                <MenuItem Header="_Delete Model" Click="DeleteModel_Click"/>
-                <MenuItem Header="_Refresh Models" Click="RefreshModels_Click"/>
-                <Separator/>
-                <MenuItem Header="Manage _Models" Click="ManageModels_Click"/>
-            </MenuItem>
-            <MenuItem Header="_Settings" Foreground="#E6E6E6">
-                <MenuItem Header="_Preferences..." InputGestureText="Ctrl+," Click="Preferences_Click"/>
-                <MenuItem Header="_Server Settings" Click="ServerSettings_Click"/>
-            </MenuItem>
-            <MenuItem Header="_Help" Foreground="#E6E6E6">
-                <MenuItem Header="Ollama _Documentation" Click="HelpDocs_Click"/>
-                <MenuItem Header="_Model Library" Click="HelpModels_Click"/>
-                <MenuItem Header="_Keyboard Shortcuts" Click="HelpShortcuts_Click"/>
-                <Separator/>
-                <MenuItem Header="_Check for Updates" Click="CheckUpdates_Click"/>
-                <MenuItem Header="_About Ollama 2.0" Click="About_Click"/>
-            </MenuItem>
-        </Menu>
-
-        <!-- WebView2 hosts the chat UI (rendered in the OS native WebView2, not bundled Chromium) -->
-        <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#0B0D0F"/>
-    </DockPanel>
+    <Grid>
+        <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#000000"/>
+    </Grid>
 </Window>
