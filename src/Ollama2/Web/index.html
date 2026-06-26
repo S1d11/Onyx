@@ -160,10 +160,13 @@
               </div>
               <div class="settings-row-text">
                 <div class="settings-row-title">Auto-download updates</div>
-                <div class="settings-row-desc">Automatically download updates when available.</div>
+                <div class="settings-row-desc">Automatically check and download updates on startup.</div>
               </div>
             </div>
-            <div class="toggle on" id="toggleAutoUpdate"></div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="pill-btn outline" id="checkNowBtn" style="font-size:12px;padding:5px 12px">Check now</button>
+              <div class="toggle on" id="toggleAutoUpdate"></div>
+            </div>
           </div>
           <!-- Expose to network -->
           <div class="settings-row">
@@ -201,15 +204,15 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </div>
               <div class="settings-row-text">
-                <div class="settings-row-title">Context length</div>
+                <div class="settings-row-title">Context length <span id="contextValue" style="color:var(--text-muted);font-size:12px;font-weight:400;margin-left:6px">256k</span></div>
                 <div class="settings-row-desc">Context length determines how much of your conversation local LLMs can remember and use to generate responses.</div>
               </div>
             </div>
-            <div class="slider-track">
-              <div class="slider-thumb" id="contextSliderThumb"></div>
+            <div class="slider-track" id="contextSliderTrack">
+              <div class="slider-thumb" id="contextSliderThumb" style="right:0%"></div>
             </div>
             <div class="slider-labels">
-              <span>4k</span><span>8k</span><span>16k</span><span>32k</span><span>64k</span><span>128k</span><span>256k</span>
+              <span data-idx="0">4k</span><span data-idx="1">8k</span><span data-idx="2">16k</span><span data-idx="3">32k</span><span data-idx="4">64k</span><span data-idx="5">128k</span><span data-idx="6">256k</span>
             </div>
           </div>
           <!-- Close behavior -->

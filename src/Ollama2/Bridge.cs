@@ -23,8 +23,13 @@ internal sealed class Bridge
     private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = null };
     private CancellationTokenSource? _chatCts;
     private CancellationTokenSource? _pullCts;
+    private readonly UpdateService _updater = new();
 
-    public Bridge(MainWindow win) => _win = win;
+    public Bridge(MainWindow win)
+    {
+        _win = win;
+        _updater.StatusChanged += (_, e) => PostToWeb(new { @event = "updateStatus", status = e.Status, progress = e.ProgressPercent, url = e.DownloadUrl });
+    }
 
     private App App => (App)Application.Current;
 
@@ -90,6 +95,11 @@ internal sealed class Bridge
                 "fetchPage" => await App.WebSearch.FetchPageAsync(
                     root.GetProperty("url").GetString()!, 6000, default),
                 "exportChat" => HandleExportChat(root),
+                "checkForUpdates" => await _updater.CheckForUpdateAsync(),
+                "downloadUpdate" => await _updater.DownloadUpdateAsync(
+                    root.Deserialize<ReleaseInfo>(_json)!),
+                "installUpdate" => HandleInstallUpdate(root),
+                "browseFolder" => HandleBrowseFolder(),
                 _ => null,
             };
             ReplyOk(id, data);
@@ -187,6 +197,21 @@ internal sealed class Bridge
     {
         var c = App.Chats.Get(root.GetProperty("id").GetString()!);
         return c == null ? "" : JsonSerializer.Serialize(c, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private bool HandleInstallUpdate(JsonElement root)
+    {
+        var path = root.GetProperty("path").GetString()!;
+        _updater.InstallUpdate(path);
+        return true;
+    }
+
+    private string HandleBrowseFolder()
+    {
+        using var dlg = new System.Windows.Forms.FolderBrowserDialog();
+        dlg.Description = "Select model storage location";
+        var result = dlg.ShowDialog();
+        return result == System.Windows.Forms.DialogResult.OK ? dlg.SelectedPath : "";
     }
 
     // ---- The core chat + web-search flow ----

@@ -50,6 +50,7 @@
       case "pullDone": onPullDone(msg); break;
       case "pullCancelled": onPullCancelled(msg); break;
       case "pullError": toast("Pull failed: " + msg.message); break;
+      case "updateStatus": onUpdateStatus(msg); break;
       case "error": toast(msg.message); break;
     }
   }
@@ -368,41 +369,150 @@
 
   // ---- Settings page ----
   function initSettings() {
-    $("#profileName").textContent = state.config?.defaultModel || "User";
-    $("#profileAvatar").textContent = (state.config?.defaultModel || "U").charAt(0).toUpperCase();
+    const cfg = state.config || {};
+    $("#profileName").textContent = cfg.defaultModel || "User";
+    $("#profileAvatar").textContent = (cfg.defaultModel || "U").charAt(0).toUpperCase();
 
-    // Toggles
-    $$(".toggle").forEach(t => {
-      t.addEventListener("click", () => { t.classList.toggle("on"); });
-    });
+    // Cloud toggle
+    const cloudToggle = $("#toggleCloud");
+    cloudToggle.classList.toggle("on", cfg.webSearchEnabled !== false);
+    cloudToggle.onclick = () => {
+      const on = cloudToggle.classList.toggle("on");
+      if (state.config) { state.config.webSearchEnabled = on; call("saveConfig", { config: state.config }); }
+    };
+
+    // Auto-download toggle
+    const autoToggle = $("#toggleAutoUpdate");
+    autoToggle.classList.toggle("on", cfg.checkUpdatesOnStartup !== false);
+    autoToggle.onclick = () => {
+      const on = autoToggle.classList.toggle("on");
+      if (state.config) { state.config.checkUpdatesOnStartup = on; call("saveConfig", { config: state.config }); }
+      toast(on ? "Updates will be checked on startup" : "Auto-update disabled");
+    };
+
+    // Check now button
+    const checkBtn = $("#checkNowBtn");
+    if (checkBtn) {
+      checkBtn.onclick = async () => {
+        checkBtn.textContent = "Checking...";
+        try {
+          const release = await call("checkForUpdates");
+          if (!release) { toast("You are on the latest version."); }
+          else {
+            toast(`Update available: ${release.tag_name}. Downloading...`);
+            const path = await call("downloadUpdate", { release });
+            if (path) {
+              if (confirm(`Update downloaded. Install ${release.tag_name} now? The app will restart.`)) {
+                await call("installUpdate", { path });
+              }
+            }
+          }
+        } catch (e) { toast("Update check failed: " + e.message); }
+        finally { checkBtn.textContent = "Check now"; }
+      };
+    }
+
+    // Expose to network toggle
+    const netToggle = $("#toggleNetwork");
+    netToggle.classList.toggle("on", cfg.exposeToNetwork === true);
+    netToggle.onclick = () => {
+      const on = netToggle.classList.toggle("on");
+      if (state.config) { state.config.exposeToNetwork = on; call("saveConfig", { config: state.config }); }
+      if (on) toast("To apply: set OLLAMA_HOST=0.0.0.0 and restart ollama serve");
+      else toast("Network exposure disabled");
+    };
+
+    // Model location
+    $("#modelPathInput").value = cfg.modelPath || "C:\\Users\\" + (navigator.userAgent.match(/Win/) ? "user" : "user") + "\\.ollama\\models";
+    $("#browseModelPath").onclick = async () => {
+      const path = await call("browseFolder");
+      if (path) {
+        $("#modelPathInput").value = path;
+        if (state.config) { state.config.modelPath = path; call("saveConfig", { config: state.config }); }
+        toast("To apply: set OLLAMA_MODELS env var and restart ollama serve");
+      }
+    };
+
+    // Context length slider
+    const ctxValues = [4096, 8192, 16384, 32768, 65536, 131072, 262144];
+    const ctxLabels = ["4k", "8k", "16k", "32k", "64k", "128k", "256k"];
+    const currentCtx = cfg.numCtx || 4096;
+    let ctxIdx = ctxValues.indexOf(currentCtx);
+    if (ctxIdx < 0) ctxIdx = 6;
+    $("#contextValue").textContent = ctxLabels[ctxIdx];
+    updateSliderThumb(ctxIdx);
+
+    const track = $("#contextSliderTrack");
+    const thumb = $("#contextSliderThumb");
+    let dragging = false;
+
+    function updateSliderThumb(idx) {
+      const pct = (idx / (ctxLabels.length - 1)) * 100;
+      thumb.style.left = pct + "%";
+      thumb.style.transform = "translateX(-50%)";
+    }
+
+    function snapToIndex(clientX) {
+      const rect = track.getBoundingClientRect();
+      const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const idx = Math.round(x * (ctxLabels.length - 1));
+      return Math.max(0, Math.min(ctxLabels.length - 1, idx));
+    }
+
+    thumb.onmousedown = (e) => { dragging = true; e.preventDefault(); };
+    track.onmousedown = (e) => {
+      const idx = snapToIndex(e.clientX);
+      ctxIdx = idx;
+      $("#contextValue").textContent = ctxLabels[idx];
+      updateSliderThumb(idx);
+      if (state.config) { state.config.numCtx = ctxValues[idx]; call("saveConfig", { config: state.config }); }
+    };
+    document.onmousemove = (e) => {
+      if (!dragging) return;
+      const idx = snapToIndex(e.clientX);
+      ctxIdx = idx;
+      $("#contextValue").textContent = ctxLabels[idx];
+      updateSliderThumb(idx);
+    };
+    document.onmouseup = () => {
+      if (dragging && state.config) {
+        state.config.numCtx = ctxValues[ctxIdx];
+        call("saveConfig", { config: state.config });
+      }
+      dragging = false;
+    };
 
     // Close behavior buttons
-    const cb = state.config?.closeBehavior || "tray";
+    const cb = cfg.closeBehavior || "tray";
     $$("#closeBehaviorOptions .pill-btn").forEach(btn => btn.classList.remove("selected"));
     const activeBtn = $(`#closeBehaviorOptions [data-val="${cb}"]`);
     if (activeBtn) activeBtn.classList.add("selected");
-
     $$("#closeBehaviorOptions .pill-btn").forEach(btn => {
       btn.onclick = () => {
         $$("#closeBehaviorOptions .pill-btn").forEach(b => b.classList.remove("selected"));
         btn.classList.add("selected");
         const val = btn.dataset.val;
         if (state.config) { state.config.closeBehavior = val; call("saveConfig", { config: state.config }); }
-        toast(val === "tray" ? "App will keep running in the background when closed" : "App will quit when closed");
+        toast(val === "tray" ? "App will keep running when closed" : "App will quit when closed");
       };
     });
 
-    $("#browseModelPath").addEventListener("click", () => toast("Browse dialog would open here"));
-    $("#resetDefaults").addEventListener("click", () => {
-      $$(".toggle").forEach(t => t.classList.add("on"));
-      $$("#closeBehaviorOptions .pill-btn").forEach(b => b.classList.remove("selected"));
-      $("#cbTray").classList.add("selected");
-      if (state.config) {
-        state.config.closeBehavior = "tray";
-        call("saveConfig", { config: state.config });
-      }
+    // Reset to defaults
+    $("#resetDefaults").onclick = () => {
+      if (!confirm("Reset all settings to defaults?")) return;
+      const defaults = {
+        serverUrl: "http://localhost:11434", defaultModel: "llama3.2",
+        webSearchEnabled: true, webSearchProvider: "duckduckgo",
+        webSearchApiKey: "", theme: "dark", sidebarVisible: true, zoom: 1,
+        temperature: 0.8, topK: 40, topP: 0.9, numCtx: 4096,
+        systemPrompt: "", maxSearchResults: 5, closeBehavior: "tray",
+        checkUpdatesOnStartup: true, exposeToNetwork: false, modelPath: "", stream: true,
+      };
+      state.config = { ...state.config, ...defaults };
+      call("saveConfig", { config: state.config });
+      initSettings(); // re-render
       toast("Settings reset to defaults");
-    });
+    };
   }
 
   // ---- modals (manage models, pull) ----
@@ -464,6 +574,14 @@
   }
   function onPullDone(msg) { if ($("#pullStatus")) { $("#pullStatus").textContent = "Done: " + msg.name; if ($("#doPull")) $("#doPull").disabled = false; } toast("Pulled " + msg.name); refreshModels(); }
   function onPullCancelled(msg) { if ($("#pullStatus")) $("#pullStatus").textContent = "Cancelled"; if ($("#doPull")) $("#doPull").disabled = false; }
+
+  function onUpdateStatus(msg) {
+    if (msg.progress > 0 && msg.progress < 100) {
+      toast(`Update: ${msg.status} (${Math.round(msg.progress)}%)`);
+    } else {
+      toast(msg.status);
+    }
+  }
 
   function modal(html) {
     const root = $("#modalRoot");

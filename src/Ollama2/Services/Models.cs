@@ -20,6 +20,9 @@ public class AppConfig
     public string WebSearchProvider { get; set; } = "duckduckgo";
     public string? WebSearchApiKey { get; set; }
     public string CloseBehavior { get; set; } = "tray"; // "quit" or "tray"
+    public bool CheckUpdatesOnStartup { get; set; } = true;
+    public bool ExposeToNetwork { get; set; } = false;
+    public string ModelPath { get; set; } = "";
     public bool Stream { get; set; } = true;
 }
 

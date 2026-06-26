@@ -55,6 +55,29 @@ public partial class App : Application
         WebSearch = new WebSearchService();
         Chats = new ChatStore(Path.Combine(DataDir, "chats.json"));
         Chats.Load();
+
+        // Background update check on startup (if enabled)
+        if (Config.Current.CheckUpdatesOnStartup)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var updater = new UpdateService();
+                    var release = await updater.CheckForUpdateAsync();
+                    if (release != null && !string.IsNullOrEmpty(release.DownloadUrl))
+                    {
+                        var path = await updater.DownloadUpdateAsync(release);
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            // Show a native notification or just log — the UI isn't ready yet
+                            // The user will see the downloaded file next time they check
+                        }
+                    }
+                }
+                catch { /* silent fail */ }
+            });
+        }
     }
 
     private static void BringExistingToFront()
