@@ -79,6 +79,8 @@
       $("#composerModelLabel").textContent = state.currentModel || "Select";
       updateComposerModel();
       if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); $("#topbar").classList.add("has-toggle"); }
+      const spn2 = $("#sidebarProfileName"); if (spn2) spn2.textContent = state.config.defaultModel || "User";
+      const spa2 = $("#sidebarProfileAvatar"); if (spa2) spa2.textContent = (state.config.defaultModel || "U").charAt(0).toUpperCase();
     }
     renderChatList();
     if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
@@ -617,6 +619,8 @@
     const cfg = state.config || {};
     $("#profileName").textContent = cfg.defaultModel || "User";
     $("#profileAvatar").textContent = (cfg.defaultModel || "U").charAt(0).toUpperCase();
+    const spn = $("#sidebarProfileName"); if (spn) spn.textContent = cfg.defaultModel || "User";
+    const spa = $("#sidebarProfileAvatar"); if (spa) spa.textContent = (cfg.defaultModel || "U").charAt(0).toUpperCase();
     $("#appVersion").textContent = "v" + state.appVersion;
 
     // Cloud toggle
