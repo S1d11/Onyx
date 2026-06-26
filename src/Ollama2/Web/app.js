@@ -178,6 +178,7 @@
   }
 
   async function openChat(id) {
+    showView("chat");
     state.currentId = id;
     const c = state.chats.find(x => x.id === id) || (state.draftChat && state.draftChat.id === id ? state.draftChat : null);
     if (!c) return;
