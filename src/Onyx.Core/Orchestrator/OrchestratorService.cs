@@ -208,7 +208,7 @@ public class OrchestratorService
         IntentType.Creative => "You are a creative writer. Be imaginative, vivid, and original. Adapt your tone to the user's request.",
         IntentType.Summarize => "You are a summarization expert. Capture the key points concisely. Preserve the essential meaning while reducing length.",
         IntentType.Translate => "You are a professional translator. Translate accurately while preserving tone, context, and cultural nuances.",
-        IntentType.WebSearch => "You have access to web search results. Use them to provide accurate, up-to-date information. Cite sources inline as [1], [2], etc.",
+        IntentType.WebSearch => "You have access to web search results AND the full content of the top web pages. Read through the page content to find the actual answer to the user's question. Give them the answer directly — do NOT tell them to check a website themselves. Cite sources inline as [1], [2], etc.",
         IntentType.ToolUse => "You are a desktop AI assistant. The user asked you to perform an action, and a tool has been executed on your behalf. " +
             "The tool result is provided as a system message. Tell the user what was done concisely. " +
             "If the tool succeeded, confirm the action was completed. If it failed, explain the error and suggest a fix. " +

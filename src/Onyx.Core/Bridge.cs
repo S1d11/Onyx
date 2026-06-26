@@ -502,6 +502,11 @@ public sealed class Bridge
                     sources = search.Results;
                     PostToWeb(new { @event = "searchResults", chatId, query = search.Query, results = search.Results });
                     sendMessages.Add(new ChatMessage { Role = "system", Content = BuildSearchContext(search) });
+                    // Fetch the actual page content so the LLM can read and answer directly
+                    PostToWeb(new { @event = "orchestratorStage", chatId, stage = "fetching", message = "Reading web pages..." });
+                    var pageContent = await BuildFetchedPagesContextAsync(search, maxPages: 3, charsPerPage: 4000, ct);
+                    if (!string.IsNullOrEmpty(pageContent))
+                        sendMessages.Add(new ChatMessage { Role = "system", Content = pageContent });
                 }
                 else
                 {
@@ -523,6 +528,11 @@ public sealed class Bridge
                             var search = await AppContext.Current.WebSearch.SearchAsync(lastUser, cfg.MaxSearchResults, ct);
                             sources = search.Results;
                             PostToWeb(new { @event = "searchResults", chatId, query = search.Query, results = search.Results });
+                            // Fetch the actual page content so the LLM can read and answer directly
+                            PostToWeb(new { @event = "orchestratorStage", chatId, stage = "fetching", message = "Reading web pages..." });
+                            var pageContent = await BuildFetchedPagesContextAsync(search, maxPages: 3, charsPerPage: 4000, ct);
+                            if (!string.IsNullOrEmpty(pageContent))
+                                sendMessages.Add(new ChatMessage { Role = "system", Content = pageContent });
                         }
                     }
                     else
@@ -736,7 +746,7 @@ public sealed class Bridge
     {
         var sb = new StringBuilder();
         sb.AppendLine("You have access to up-to-date web search results. Use them to answer the user's question.");
-        sb.AppendLine("Cite sources inline as [1], [2], ... matching the numbered list below, and prefer the snippets.");
+        sb.AppendLine("Cite sources inline as [1], [2], ... matching the numbered list below.");
         sb.AppendLine($"Search query: {search.Query}");
         sb.AppendLine();
         for (int i = 0; i < search.Results.Count; i++)
@@ -747,6 +757,44 @@ public sealed class Bridge
             sb.AppendLine($"    {r.Snippet}");
             sb.AppendLine();
         }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Fetch the content of the top search results and build a context block with
+    /// the actual page text so the LLM can read the pages and answer directly.
+    /// </summary>
+    private static async Task<string> BuildFetchedPagesContextAsync(WebSearchResult search, int maxPages, int charsPerPage, CancellationToken ct)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Here is the full content of the top web pages from the search results. Read through them to find the answer to the user's question.");
+        sb.AppendLine();
+
+        var webSearch = AppContext.Current.WebSearch;
+        var fetched = 0;
+        foreach (var r in search.Results)
+        {
+            if (fetched >= maxPages) break;
+            if (ct.IsCancellationRequested) break;
+
+            // Skip non-page URLs
+            var url = r.Url ?? "";
+            if (string.IsNullOrEmpty(url) || url.EndsWith(".pdf") || url.EndsWith(".zip") || url.EndsWith(".jpg") || url.EndsWith(".png"))
+                continue;
+
+            var content = await webSearch.FetchPageAsync(url, charsPerPage, ct);
+            if (string.IsNullOrWhiteSpace(content)) continue;
+
+            sb.AppendLine($"=== [{fetched + 1}] {r.Title} ===");
+            sb.AppendLine($"URL: {url}");
+            sb.AppendLine(content);
+            sb.AppendLine();
+            fetched++;
+        }
+
+        if (fetched == 0)
+            return ""; // Nothing could be fetched — fall back to snippets only
+
         return sb.ToString();
     }
 
