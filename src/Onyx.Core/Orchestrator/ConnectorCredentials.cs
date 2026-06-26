@@ -35,7 +35,7 @@ public static class ConnectorCredentials
     // Create at: https://github.com/settings/developers
     // Type: OAuth App (device flow — no secret needed)
     // Scopes: repo, read:org, user
-    public const string GitHubClientId = "PASTE_YOUR_GITHUB_CLIENT_ID";
+    public const string GitHubClientId = "Ov23liM6T0io5K7znJBD";
 
     /// <summary>Check if Google credentials are configured (not placeholder).</summary>
     public static bool GoogleConfigured =>
