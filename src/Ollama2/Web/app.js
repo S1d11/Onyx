@@ -292,7 +292,7 @@
     `;
     effortRow.addEventListener("click", (e) => {
       e.stopPropagation();
-      showEffortSubmenu(menu);
+      showEffortSubmenu();
     });
     menu.appendChild(effortRow);
 
@@ -310,19 +310,15 @@
     positionMenu();
   }
 
-  function showEffortSubmenu(menu) {
-    menu.innerHTML = "";
-
-    // Header with back arrow
-    const header = document.createElement("div"); header.className = "mm-submenu-header";
-    header.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg><span>Effort</span>`;
-    header.addEventListener("click", (e) => { e.stopPropagation(); renderModelMenu(); });
-    menu.appendChild(header);
+  function showEffortSubmenu() {
+    const em = $("#effortMenu");
+    em.innerHTML = "";
+    em.classList.remove("hidden");
 
     // Description
     const desc = document.createElement("div"); desc.className = "mm-submenu-desc";
     desc.textContent = "Higher effort means more thorough responses, but takes longer and uses your limits faster.";
-    menu.appendChild(desc);
+    em.appendChild(desc);
 
     // Effort levels
     const currentEffort = state.config?.effort || "medium";
@@ -340,13 +336,14 @@
           state.config.effort = lvl.key;
           await call("saveConfig", { config: state.config });
         }
-        showEffortSubmenu(menu);
+        showEffortSubmenu();
+        renderModelMenu();
       });
-      menu.appendChild(row);
+      em.appendChild(row);
     });
 
     // Thinking toggle
-    const sep = document.createElement("div"); sep.className = "mm-sep"; menu.appendChild(sep);
+    const sep = document.createElement("div"); sep.className = "mm-sep"; em.appendChild(sep);
     const thinkingOn = state.config?.thinkingEnabled === true;
     const thinkingRow = document.createElement("div");
     thinkingRow.className = "mm-thinking-row";
@@ -366,22 +363,30 @@
       state.config.thinkingEnabled = on;
       await call("saveConfig", { config: state.config });
     });
-    menu.appendChild(thinkingRow);
+    em.appendChild(thinkingRow);
 
     positionMenu();
+  }
+
+  function hideEffortMenu() {
+    $("#effortMenu")?.classList.add("hidden");
   }
 
   function positionMenu() {
     const picker = $("#composerModelPicker");
     const menu = $("#modelMenu");
+    const em = $("#effortMenu");
     if (!picker || !menu || menu.classList.contains("hidden")) return;
     const rect = picker.getBoundingClientRect();
     const vh = window.innerHeight;
     const spaceAbove = rect.top - 16;
-    menu.style.maxHeight = Math.min(380, Math.max(200, spaceAbove)) + "px";
-    // Ensure menu doesn't go off right edge
+    const mh = Math.min(380, Math.max(200, spaceAbove)) + "px";
+    menu.style.maxHeight = mh;
+    if (em && !em.classList.contains("hidden")) em.style.maxHeight = mh;
+    // Ensure combined menus don't go off right edge
     const vw = window.innerWidth;
-    if (rect.left + 320 > vw) {
+    const bothWidth = 320 + 300 + 16; // model menu + effort menu + gap
+    if (rect.left + bothWidth > vw) {
       menu.style.left = "auto";
       menu.style.right = "0";
     } else {
@@ -408,7 +413,7 @@
     renderModelMenu();
   }
 
-  function closeModelMenu() { $("#modelMenu").classList.add("hidden"); }
+  function closeModelMenu() { $("#modelMenu")?.classList.add("hidden"); hideEffortMenu(); }
 
   // ---- send / stream ----
   async function send() {
@@ -1002,7 +1007,7 @@
       menu.classList.toggle("hidden");
       if (wasHidden) { renderModelMenu(); positionMenu(); }
     });
-    document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) closeModelMenu(); });
+    document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) { closeModelMenu(); hideEffortMenu(); } });
     window.addEventListener("resize", () => { positionMenu(); });
 
     $("#webSearchToggle").addEventListener("click", () => {
