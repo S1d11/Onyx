@@ -13,15 +13,16 @@
     pendingAssistantEl: null,
     pendingAssistantText: "",
     view: "chat",
+    appVersion: "",
   };
 
   let rpcId = 0;
   const pending = new Map();
   function call(action, payload = {}) {
-    const id = "rpc" + (++rpcId);
+    const rpcId = "rpc" + (++rpcId);
     return new Promise((resolve, reject) => {
-      pending.set(id, { resolve, reject });
-      window.chrome.webview.postMessage(JSON.stringify({ id, action, ...payload }));
+      pending.set(rpcId, { resolve, reject });
+      window.chrome.webview.postMessage(JSON.stringify({ _rpcId: rpcId, action, payload }));
     });
   }
   function emit(action, payload = {}) {
@@ -30,8 +31,9 @@
 
   window.chrome.webview.addEventListener("message", (e) => {
     const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-    if (msg.id && pending.has(msg.id)) {
-      const p = pending.get(msg.id); pending.delete(msg.id);
+    const rpcKey = msg._rpcId || msg.id;
+    if (rpcKey && pending.has(rpcKey)) {
+      const p = pending.get(rpcKey); pending.delete(rpcKey);
       msg.ok ? p.resolve(msg.data) : p.reject(new Error(msg.error));
       return;
     }
@@ -69,6 +71,7 @@
   function onInitialState(data) {
     state.config = data.config || state.config;
     state.chats = data.chats || [];
+    state.appVersion = data.appVersion || "2.5.4";
     if (state.config) {
       state.currentModel = state.config.defaultModel;
       $("#modelLabel").textContent = state.currentModel || "Select a model";
@@ -95,7 +98,7 @@
     list.innerHTML = "";
     state.chats.forEach(c => {
       const el = document.createElement("div");
-      el.className = "chat-item" + (c.id === state.currentId ? " active" : "");
+      el.className = "chat-item";
       el.textContent = c.title;
       el.addEventListener("click", () => openChat(c.id));
       el.addEventListener("contextmenu", (ev) => {
@@ -481,6 +484,7 @@
     const cfg = state.config || {};
     $("#profileName").textContent = cfg.defaultModel || "User";
     $("#profileAvatar").textContent = (cfg.defaultModel || "U").charAt(0).toUpperCase();
+    $("#appVersion").textContent = "v" + state.appVersion;
 
     // Cloud toggle
     const cloudToggle = $("#toggleCloud");

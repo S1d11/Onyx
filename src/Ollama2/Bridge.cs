@@ -79,11 +79,12 @@ internal sealed class Bridge
         var root = doc.RootElement;
         if (!root.TryGetProperty("action", out var actEl)) return;
         var action = actEl.GetString() ?? "";
-        var id = root.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
-        _ = DispatchAsync(action, id, root);
+        var rpcId = root.TryGetProperty("_rpcId", out var rpcEl) ? rpcEl.GetString() ?? "" : "";
+        var payload = root.TryGetProperty("payload", out var payEl) ? payEl : root;
+        _ = DispatchAsync(action, rpcId, payload);
     }
 
-    private async Task DispatchAsync(string action, string id, JsonElement root)
+    private async Task DispatchAsync(string action, string rpcId, JsonElement payload)
     {
         try
         {
@@ -91,33 +92,33 @@ internal sealed class Bridge
             {
                 "getInitialState" => await HandleInitialState(),
                 "listModels" => await App.Ollama.ListModelsAsync(),
-                "showModel" => await App.Ollama.ShowModelAsync(root.GetProperty("name").GetString()!),
-                "newChat" => HandleNewChat(root),
-                "loadChat" => App.Chats.Get(root.GetProperty("id").GetString()!),
-                "deleteChat" => HandleDeleteChat(root),
-                "renameChat" => HandleRenameChat(root),
-                "sendMessage" => await HandleSendMessage(root),
+                "showModel" => await App.Ollama.ShowModelAsync(payload.GetProperty("name").GetString()!),
+                "newChat" => HandleNewChat(payload),
+                "loadChat" => App.Chats.Get(payload.GetProperty("id").GetString()!),
+                "deleteChat" => HandleDeleteChat(payload),
+                "renameChat" => HandleRenameChat(payload),
+                "sendMessage" => await HandleSendMessage(payload),
                 "stopGeneration" => HandleStop(),
-                "pullModel" => await HandlePull(root),
+                "pullModel" => await HandlePull(payload),
                 "stopPull" => HandleStopPull(),
-                "deleteModel" => await App.Ollama.DeleteModelAsync(root.GetProperty("name").GetString()!),
-                "saveConfig" => HandleSaveConfig(root),
+                "deleteModel" => await App.Ollama.DeleteModelAsync(payload.GetProperty("name").GetString()!),
+                "saveConfig" => HandleSaveConfig(payload),
                 "testServer" => await App.Ollama.IsReachableAsync(),
                 "fetchPage" => await App.WebSearch.FetchPageAsync(
-                    root.GetProperty("url").GetString()!, 6000, default),
-                "exportChat" => HandleExportChat(root),
+                    payload.GetProperty("url").GetString()!, 6000, default),
+                "exportChat" => HandleExportChat(payload),
                 "checkForUpdates" => await _updater.CheckForUpdateAsync(),
                 "downloadUpdate" => await _updater.DownloadUpdateAsync(
-                    root.GetProperty("release").Deserialize<ReleaseInfo>(_json)!),
-                "installUpdate" => HandleInstallUpdate(root),
+                    payload.GetProperty("release").Deserialize<ReleaseInfo>(_json)!),
+                "installUpdate" => HandleInstallUpdate(payload),
                 "browseFolder" => HandleBrowseFolder(),
                 _ => null,
             };
-            ReplyOk(id, data);
+            ReplyOk(rpcId, data);
         }
         catch (Exception ex)
         {
-            ReplyError(id, ex.Message);
+            ReplyError(rpcId, ex.Message);
         }
     }
 
@@ -130,6 +131,7 @@ internal sealed class Bridge
             config = cfg,
             chats = App.Chats.Chats,
             serverReachable = reachable,
+            appVersion = UpdateService.CurrentVersion.ToString(3),
         };
     }
 
