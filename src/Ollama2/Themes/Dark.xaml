@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="BgColor">#0B0D0F</Color>
+    <Color x:Key="SurfaceColor">#15181C</Color>
+    <Color x:Key="SurfaceAltColor">#1E2228</Color>
+    <SolidColorBrush x:Key="WindowBg" Color="#0B0D0F" />
+    <SolidColorBrush x:Key="MenuBarBg" Color="#15181C" />
+    <SolidColorBrush x:Key="MenuText" Color="#E6E6E6" />
+    <SolidColorBrush x:Key="Accent" Color="#D97757" />
+</ResourceDictionary>

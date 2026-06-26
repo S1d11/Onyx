@@ -1,0 +1,23 @@
+# Build output
+bin/
+obj/
+publish/
+
+# User-local data (never commit)
+*.user
+*.suo
+.vs/
+.idea/
+
+# Build artifacts
+*.exe
+*.dll
+*.pdb
+*.msi
+
+# Keep the app icon and source-controlled assets
+!src/Ollama2/app.ico
+
+# OS junk
+Thumbs.db
+.DS_Store
