@@ -7,7 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Ollama2</RootNamespace>
     <AssemblyName>Onyx</AssemblyName>
-    <Version>2.16.1.0</Version>
+    <Version>2.17.0.0</Version>
     <Company>Onyx</Company>
     <Product>Onyx</Product>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -24,16 +24,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Onyx.Core\Onyx.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
-    <PackageReference Include="Markdig" Version="0.38.0" />
     <PackageReference Include="System.Management" Version="9.0.0" />
   </ItemGroup>
 
-  <!-- Embed the web UI assets so the single .exe is self-contained -->
-  <ItemGroup>
-    <EmbeddedResource Include="Web\**\*" />
-  </ItemGroup>
-
+  <!-- Web UI assets are embedded in Onyx.Core; Windows shell just needs them for dev server if any -->
   <ItemGroup>
     <None Update="app.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

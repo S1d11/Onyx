@@ -93,7 +93,7 @@ public class UpdateService
     {
         if (string.IsNullOrEmpty(release.DownloadUrl)) return null;
 
-        var updateDir = Path.Combine(App.DataDir, "updates");
+        var updateDir = Path.Combine(AppContext.Current.DataDir, "updates");
         Directory.CreateDirectory(updateDir);
         var dest = Path.Combine(updateDir, release.AssetName);
 

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-maccatalyst</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Onyx.Mac</RootNamespace>
+    <AssemblyName>Onyx</AssemblyName>
+    <Version>2.17.0.0</Version>
+    <Company>Onyx</Company>
+    <Product>Onyx</Product>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ApplicationTitle>Onyx</ApplicationTitle>
+    <ApplicationId>com.onyx.app</ApplicationId>
+    <ApplicationDisplayVersion>2.17</ApplicationDisplayVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Onyx.Core\Onyx.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- App Icon -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#0C0C0E" />
+    <!-- Splash Screen -->
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0C0C0E" />
+  </ItemGroup>
+
+</Project>

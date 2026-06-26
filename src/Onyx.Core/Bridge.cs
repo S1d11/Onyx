@@ -6,45 +6,42 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using Ollama2.Services;
 
 namespace Ollama2;
 
 /// <summary>
-/// Marshals JSON messages between the WebView2 UI and the C# backend services.
+/// Marshals JSON messages between the web UI and the C# backend services.
 /// Protocol (web -> C#):  { "id": "<rpcId>", "action": "...", ...payload }
 /// Protocol (C# -> web):  { "event": "...", ... }  for push events
 ///                         { "id": "<rpcId>", "ok": bool, "data"|"error": ... } for RPC replies
 /// </summary>
-internal sealed class Bridge
+public sealed class Bridge
 {
-    private readonly MainWindow _win;
+    private readonly IBridgeHost _host;
     private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private readonly Dictionary<string, CancellationTokenSource> _chatCtsByChatId = new();
     private CancellationTokenSource? _pullCts;
     private readonly UpdateService _updater = new();
 
-    public Bridge(MainWindow win)
+    public Bridge(IBridgeHost host)
     {
-        _win = win;
+        _host = host;
         _updater.StatusChanged += (_, e) => PostToWeb(new { @event = "updateStatus", status = e.Status, progress = e.ProgressPercent, url = e.DownloadUrl });
     }
 
-    private App App => (App)Application.Current;
-
     public void PostToWeb(object payload)
-        => _win.PostWebMessageAsJson(JsonSerializer.Serialize(payload, _json));
+        => _host.PostMessage(JsonSerializer.Serialize(payload, _json));
 
     public void NotifyUpdateReady()
     {
-        if (!string.IsNullOrEmpty(App.PendingUpdatePath))
+        if (!string.IsNullOrEmpty(AppContext.PendingUpdatePath))
         {
             PostToWeb(new
             {
                 @event = "updateReady",
-                version = App.PendingUpdateVersion,
-                path = App.PendingUpdatePath,
+                version = AppContext.PendingUpdateVersion,
+                path = AppContext.PendingUpdatePath,
             });
         }
     }
@@ -53,7 +50,7 @@ internal sealed class Bridge
     {
         try
         {
-            var models = await App.Ollama.ListModelsAsync();
+            var models = await AppContext.Current.Ollama.ListModelsAsync();
             PostToWeb(new { @event = "models", models });
         }
         catch (Exception ex)
@@ -80,20 +77,20 @@ internal sealed class Bridge
             object? data = action switch
             {
                 "getInitialState" => await HandleInitialState(),
-                "listModels" => await App.Ollama.ListModelsAsync(),
-                "showModel" => await App.Ollama.ShowModelAsync(payload.GetProperty("name").GetString()!),
+                "listModels" => await AppContext.Current.Ollama.ListModelsAsync(),
+                "showModel" => await AppContext.Current.Ollama.ShowModelAsync(payload.GetProperty("name").GetString()!),
                 "newChat" => HandleNewChat(payload),
-                "loadChat" => App.Chats.Get(payload.GetProperty("id").GetString()!),
+                "loadChat" => AppContext.Current.Chats.Get(payload.GetProperty("id").GetString()!),
                 "deleteChat" => HandleDeleteChat(payload),
                 "renameChat" => HandleRenameChat(payload),
                 "sendMessage" => await HandleSendMessage(payload),
                 "stopGeneration" => HandleStop(payload),
                 "pullModel" => await HandlePull(payload),
                 "stopPull" => HandleStopPull(),
-                "deleteModel" => await App.Ollama.DeleteModelAsync(payload.GetProperty("name").GetString()!),
+                "deleteModel" => await AppContext.Current.Ollama.DeleteModelAsync(payload.GetProperty("name").GetString()!),
                 "saveConfig" => HandleSaveConfig(payload),
-                "testServer" => await App.Ollama.IsReachableAsync(),
-                "fetchPage" => await App.WebSearch.FetchPageAsync(
+                "testServer" => await AppContext.Current.Ollama.IsReachableAsync(),
+                "fetchPage" => await AppContext.Current.WebSearch.FetchPageAsync(
                     payload.GetProperty("url").GetString()!, 6000, default),
                 "exportChat" => HandleExportChat(payload),
                 "checkForUpdates" => await _updater.CheckForUpdateAsync(),
@@ -101,7 +98,7 @@ internal sealed class Bridge
                     payload.GetProperty("release").Deserialize<ReleaseInfo>(_json)!),
                 "installUpdate" => HandleInstallUpdate(payload),
                 "getReleaseNotes" => await _updater.GetRecentReleasesAsync(),
-                "browseFolder" => HandleBrowseFolder(),
+                "browseFolder" => _host.BrowseFolder(),
                 _ => null,
             };
             ReplyOk(rpcId, data);
@@ -114,14 +111,14 @@ internal sealed class Bridge
 
     private async Task<object> HandleInitialState()
     {
-        var cfg = App.Config.Current;
+        var cfg = AppContext.Current.Config.Current;
 
         // Auto-launch Ollama if enabled and using localhost
         if (cfg.AutoLaunchOllama && OllamaLauncher.IsLocalhost(cfg.ServerUrl))
         {
             try
             {
-                var reachable = await App.Ollama.IsReachableAsync();
+                var reachable = await AppContext.Current.Ollama.IsReachableAsync();
                 if (!reachable)
                 {
                     PostToWeb(new { @event = "ollamaStarting" });
@@ -134,7 +131,7 @@ internal sealed class Bridge
             }
         }
 
-        var reachableFinal = await App.Ollama.IsReachableAsync();
+        var reachableFinal = await AppContext.Current.Ollama.IsReachableAsync();
         var hw = HardwareDetector.Detect();
 
         // If a background startup update check found a new version, notify the UI
@@ -143,7 +140,7 @@ internal sealed class Bridge
         return new
         {
             config = cfg,
-            chats = App.Chats.Chats,
+            chats = AppContext.Current.Chats.Chats,
             serverReachable = reachableFinal,
             appVersion = UpdateService.CurrentVersion.ToString(3),
             hardware = new
@@ -158,26 +155,26 @@ internal sealed class Bridge
 
     private StoredChat HandleNewChat(JsonElement root)
     {
-        var model = root.TryGetProperty("model", out var m) ? m.GetString() ?? App.Config.Current.DefaultModel : App.Config.Current.DefaultModel;
-        var chat = App.Chats.Create(model);
-        App.Chats.Save();
+        var model = root.TryGetProperty("model", out var m) ? m.GetString() ?? AppContext.Current.Config.Current.DefaultModel : AppContext.Current.Config.Current.DefaultModel;
+        var chat = AppContext.Current.Chats.Create(model);
+        AppContext.Current.Chats.Save();
         return chat;
     }
 
     private bool HandleDeleteChat(JsonElement root)
     {
-        App.Chats.Delete(root.GetProperty("id").GetString()!);
-        App.Chats.Save();
+        AppContext.Current.Chats.Delete(root.GetProperty("id").GetString()!);
+        AppContext.Current.Chats.Save();
         return true;
     }
 
     private bool HandleRenameChat(JsonElement root)
     {
-        var c = App.Chats.Get(root.GetProperty("id").GetString()!);
+        var c = AppContext.Current.Chats.Get(root.GetProperty("id").GetString()!);
         if (c != null)
         {
             c.Title = root.GetProperty("title").GetString()!;
-            App.Chats.Save();
+            AppContext.Current.Chats.Save();
         }
         return true;
     }
@@ -217,7 +214,7 @@ internal sealed class Bridge
         _pullCts = new CancellationTokenSource();
         try
         {
-            await foreach (var p in App.Ollama.PullAsync(name, _pullCts.Token))
+            await foreach (var p in AppContext.Current.Ollama.PullAsync(name, _pullCts.Token))
             {
                 PostToWeb(new { @event = "pullProgress", name, status = p.Status, percent = Math.Round(p.Percent, 1), completed = p.Completed, total = p.Total });
             }
@@ -232,22 +229,19 @@ internal sealed class Bridge
         {
             PostToWeb(new { @event = "pullError", name, message = ex.Message });
         }
+        finally
+        {
+            try { _pullCts?.Dispose(); } catch { }
+            _pullCts = null;
+        }
         return true;
     }
 
     private bool HandleSaveConfig(JsonElement root)
     {
-        var cfg = root.GetProperty("config").Deserialize<AppConfig>(_json) ?? new AppConfig();
-        App.Config.Update(cfg);
-        App.WebSearch.Provider = cfg.WebSearchProvider;
-        App.WebSearch.ApiKey = cfg.WebSearchApiKey;
+        var cfg = root.GetProperty("config").Deserialize<AppConfig>(_json)!;
+        AppContext.Current.Config.Update(cfg);
         return true;
-    }
-
-    private string HandleExportChat(JsonElement root)
-    {
-        var c = App.Chats.Get(root.GetProperty("id").GetString()!);
-        return c == null ? "" : JsonSerializer.Serialize(c, new JsonSerializerOptions { WriteIndented = true });
     }
 
     private bool HandleInstallUpdate(JsonElement root)
@@ -257,27 +251,29 @@ internal sealed class Bridge
         return true;
     }
 
-    private string HandleBrowseFolder()
+    private string HandleExportChat(JsonElement root)
     {
-        using var dlg = new System.Windows.Forms.FolderBrowserDialog();
-        dlg.Description = "Select model storage location";
-        var result = dlg.ShowDialog();
-        return result == System.Windows.Forms.DialogResult.OK ? dlg.SelectedPath : "";
+        var chat = AppContext.Current.Chats.Get(root.GetProperty("id").GetString()!);
+        if (chat == null) return "";
+        var sb = new StringBuilder();
+        foreach (var m in chat.Messages)
+        {
+            sb.AppendLine($"# {m.Role.ToUpperInvariant()}");
+            sb.AppendLine(m.Content);
+            sb.AppendLine();
+        }
+        return sb.ToString();
     }
 
-    // ---- The core chat + web-search flow ----
-    private async Task<bool> HandleSendMessage(JsonElement root)
+    private async Task<bool> HandleSendMessage(JsonElement payload)
     {
-        var chatId = root.GetProperty("chatId").GetString()!;
-        var model = root.TryGetProperty("model", out var m) ? m.GetString() ?? App.Config.Current.DefaultModel : App.Config.Current.DefaultModel;
-        var messages = root.GetProperty("messages").Deserialize<List<ChatMessage>>(_json) ?? new();
-        var webSearchMode = root.TryGetProperty("webSearchMode", out var wsm) ? wsm.GetString() ?? "auto" : "auto";
-        if (root.TryGetProperty("webSearch", out var wsLegacy) && wsLegacy.GetBoolean())
-            webSearchMode = "on"; // backward compat
-        var cfg = App.Config.Current;
-
-        var chat = App.Chats.Get(chatId) ?? App.Chats.Create(model);
-        chat.Model = model;
+        var chatId = payload.GetProperty("chatId").GetString()!;
+        var model = payload.GetProperty("model").GetString()!;
+        var messages = payload.GetProperty("messages").Deserialize<List<ChatMessage>>(_json) ?? new List<ChatMessage>();
+        var cfg = AppContext.Current.Config.Current;
+        var webSearchMode = payload.TryGetProperty("webSearchMode", out var wsm) ? wsm.GetString() ?? "off" : "off";
+        var chat = AppContext.Current.Chats.Get(chatId);
+        if (chat == null) return false;
 
         // Title from first user message
         if ((chat.Title == "New Chat" || string.IsNullOrEmpty(chat.Title)) && messages.FirstOrDefault(x => x.Role == "user")?.Content is { Length: > 0 } firstUser)
@@ -327,7 +323,7 @@ internal sealed class Bridge
             if (shouldSearch)
             {
                 PostToWeb(new { @event = "searching", chatId, query = lastUser });
-                var search = await App.WebSearch.SearchAsync(lastUser, cfg.MaxSearchResults, ct);
+                var search = await AppContext.Current.WebSearch.SearchAsync(lastUser, cfg.MaxSearchResults, ct);
                 sources = search.Results;
 
                 // Show source cards in the UI as they arrive (like Ollama).
@@ -359,7 +355,7 @@ internal sealed class Bridge
 
             var assistant = new StringBuilder();
             long evalCount = 0;
-            await foreach (var chunk in App.Ollama.ChatStreamAsync(req, ct))
+            await foreach (var chunk in AppContext.Current.Ollama.ChatStreamAsync(req, ct))
             {
                 if (ct.IsCancellationRequested) break;
                 var piece = chunk.Message?.Content;
@@ -386,8 +382,8 @@ internal sealed class Bridge
                 TotalMs = sw.ElapsedMilliseconds,
             };
             chat.Messages.Add(stored);
-            App.Chats.Touch(chatId);
-            App.Chats.Save();
+            AppContext.Current.Chats.Touch(chatId);
+            AppContext.Current.Chats.Save();
 
             PostToWeb(new
             {
@@ -406,7 +402,7 @@ internal sealed class Bridge
         catch (OllamaException ex)
         {
             chat.Messages.Add(new ChatStoredMessage { Role = "assistant", Content = "", Error = ex.Message });
-            App.Chats.Save();
+            AppContext.Current.Chats.Save();
             PostToWeb(new { @event = "chatError", chatId, message = ex.Message });
         }
         catch (Exception ex)
@@ -464,7 +460,7 @@ internal sealed class Bridge
 
     private static string BuildSearchContext(WebSearchResult search)
     {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("You have access to up-to-date web search results. Use them to answer the user's question.");
         sb.AppendLine("Cite sources inline as [1], [2], ... matching the numbered list below, and prefer the snippets.");
         sb.AppendLine($"Search query: {search.Query}");
@@ -482,42 +478,24 @@ internal sealed class Bridge
 
     private static bool NeedsWebSearch(string query)
     {
-        if (string.IsNullOrWhiteSpace(query)) return false;
-        var q = query.ToLowerInvariant().Trim();
-
-        // Short / trivial queries rarely need search
-        if (q.Length < 20) return false;
-
-        // Common greetings / social phrases — skip only if short and not a real question
-        var greetings = new[] {
-            "hello", "hi", "hey", "how are you", "what's up", "good morning",
-            "good evening", "good night", "thank you", "thanks", "nice to meet"
-        };
-        if (greetings.Any(g => q.StartsWith(g)) && q.Length < 35 && !q.Contains("?")) return false;
-
-        // Strong signals that current / external info is required
-        var signals = new[] {
-            "today", "now", "current", "latest", "recent", "news", "weather", "forecast",
-            "stock", "price", "score", "update", " happening", "this week", "this month",
-            "2024", "2025", "2026", "election", "market", "release date", "upcoming",
-            "live", "breaking", "trending", "who won", "what happened", "did ", "will ",
-            "nba", "nfl", "game", "match", "vs", "bitcoin", "crypto"
-        };
-        if (signals.Any(s => q.Contains(s))) return true;
-
-        // Default: rely on model knowledge
-        return false;
+        var q = query.ToLowerInvariant();
+        var triggers = new[] { "weather", "news", "score", "latest", "today", "current", "price", "stock", "who won", "election", "update on" };
+        return triggers.Any(t => q.Contains(t));
     }
 
     private void ReplyOk(string rpcId, object? data)
     {
         if (string.IsNullOrEmpty(rpcId)) return;
-        PostToWeb(new { _rpcId = rpcId, ok = true, data });
+        PostToWeb(new { id = rpcId, ok = true, data });
     }
 
     private void ReplyError(string rpcId, string message)
     {
-        if (string.IsNullOrEmpty(rpcId)) return;
-        PostToWeb(new { _rpcId = rpcId, ok = false, error = message });
+        if (string.IsNullOrEmpty(rpcId))
+        {
+            PostToWeb(new { @event = "error", message });
+            return;
+        }
+        PostToWeb(new { id = rpcId, ok = false, error = message });
     }
 }

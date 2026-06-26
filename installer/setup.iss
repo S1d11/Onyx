@@ -31,7 +31,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}
-SetupIconFile=..\src\Ollama2\app.ico
+SetupIconFile=..\src\Onyx.Windows\app.ico
 LicenseFile=..\LICENSE
 
 [Languages]

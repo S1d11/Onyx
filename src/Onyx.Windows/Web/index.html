@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Onyx</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app">
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none"><rect x="3" y="5" width="6" height="14" rx="1.5" opacity="0.85"/><rect x="11" y="5" width="10" height="14" rx="1.5" opacity="0.45"/></svg>
+  </button>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <button id="newChatBtn" class="nav-btn" title="New Chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <line x1="12" y1="8" x2="12" y2="14"/>
+          <line x1="9" y1="11" x2="15" y2="11"/>
+        </svg>
+        <span>New Chat</span>
+      </button>
+      <button id="launchBtn" class="nav-btn" title="Launch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+          <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6.11 11.89L12 15z"/>
+        </svg>
+        <span>Launch</span>
+      </button>
+      <button id="settingsBtn" class="nav-btn" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.72l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.72l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.72l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.72l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.72V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </div>
+    <div id="chatList" class="chat-list-section"></div>
+  </aside>
+
+  <!-- Main -->
+  <main id="main">
+    <!-- Chat View -->
+    <div id="viewChat" class="chat-area active">
+      <div id="topbar">
+        <button class="icon-btn hidden" id="topbarNewChat" title="New Chat" style="margin-left:auto">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+        </button>
+      </div>
+      <div id="messages" class="messages"></div>
+      <div id="emptyState" class="empty-state">
+        <div class="empty-logo">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Onyx gem: hexagonal crystal with characteristic banding -->
+            <path d="M32 4 L56 18 L56 46 L32 60 L8 46 L8 18 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <!-- Top facet -->
+            <path d="M32 4 L32 22 L8 18 Z" stroke="currentColor" stroke-width="1.2" opacity="0.5" stroke-linejoin="round"/>
+            <path d="M32 4 L32 22 L56 18 Z" stroke="currentColor" stroke-width="1.2" opacity="0.35" stroke-linejoin="round"/>
+            <!-- Banding (the hallmark of onyx) -->
+            <path d="M14 28 L50 28" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
+            <path d="M12 36 L52 36" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <path d="M14 44 L50 44" stroke="currentColor" stroke-width="1.5" opacity="0.25"/>
+            <!-- Bottom facet -->
+            <path d="M32 22 L8 18 L8 46 L32 60 Z" stroke="currentColor" stroke-width="1" opacity="0.15" stroke-linejoin="round"/>
+            <path d="M32 22 L56 18 L56 46 L32 60 Z" stroke="currentColor" stroke-width="1" opacity="0.1" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="empty-welcome">How can I help you today?</div>
+      </div>
+      <div class="composer-wrapper">
+        <div class="composer-box">
+          <div id="pendingImages" class="pending-images"></div>
+          <div class="composer-input-row">
+            <textarea id="promptInput" rows="1" placeholder="Send a message..."></textarea>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+            <div class="composer-actions">
+              <button id="attachBtn" class="icon-btn" title="Attach file">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84L9.41 17.41a2 2 0 0 1-2.83-2.83L15.07 6.1"/>
+                </svg>
+              </button>
+              <button id="webSearchToggle" class="icon-btn" title="Search the web">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+              </button>
+              <div class="model-picker" id="composerModelPicker">
+                <button id="modelPill" class="model-btn">
+                  <span id="composerModelLabel">Select</span>
+                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div id="modelMenu" class="model-menu"></div>
+                <div id="effortMenu" class="effort-menu"></div>
+              </div>
+              <button id="sendBtn" class="send-btn" title="Send message">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 2L11 13"/>
+                  <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+              </button>
+              <button id="stopBtn" class="send-btn hidden" title="Stop generation">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Launch View -->
+    <div id="viewLaunch" class="chat-area">
+      <div id="topbar">
+        <button class="back-btn" id="backFromLaunch">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        </button>
+        <span class="page-title">Launch</span>
+      </div>
+      <div class="page-content">
+        <div class="page-header">
+          <h1>Launch</h1>
+          <p>Copy a command and run it in your terminal.</p>
+        </div>
+        <div class="launch-list" id="launchList"></div>
+      </div>
+    </div>
+
+    <!-- Settings View -->
+    <div id="viewSettings" class="chat-area">
+      <div id="topbar">
+        <button class="back-btn" id="backFromSettings">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        </button>
+        <span class="page-title">Settings</span>
+        <span class="app-version" id="appVersion">v2.5.4</span>
+      </div>
+      <div class="page-content">
+        <div class="settings-card">
+          <!-- Profile -->
+          <div class="settings-profile">
+            <div class="profile-left">
+              <div class="profile-name" id="profileName">User</div>
+              <div class="profile-email" id="profileEmail">Local instance</div>
+            </div>
+            <div class="profile-right">
+              <div class="profile-avatar" id="profileAvatar">U</div>
+            </div>
+          </div>
+          <!-- Default model -->
+          <div class="settings-input-row">
+            <div style="display:flex;align-items:center;margin-bottom:4px">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M9 3v18"/><path d="M15 3v18"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Default model</div>
+                <div class="settings-row-desc">The model used for new chats.</div>
+              </div>
+            </div>
+            <div class="settings-input-wrap">
+              <select id="defaultModelSelect" style="flex:1;padding:9px 12px;background:var(--bg);border:1px solid var(--border-light);border-radius:8px;color:var(--text);font-size:14px"></select>
+            </div>
+          </div>
+          <!-- Cloud -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"/><path d="M19 19a7 7 0 1 0-11.95-4.95A5.5 5.5 0 0 0 5 19h14z"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Cloud</div>
+                <div class="settings-row-desc">Enable cloud models and web search.</div>
+              </div>
+            </div>
+            <div class="toggle on" id="toggleCloud"></div>
+          </div>
+          <!-- Auto-download -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Auto-download updates</div>
+                <div class="settings-row-desc">Automatically check and download updates on startup.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="pill-btn outline" id="checkNowBtn" style="font-size:12px;padding:5px 12px">Check now</button>
+              <div class="toggle on" id="toggleAutoUpdate"></div>
+            </div>
+          </div>
+          <!-- Expose to network -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Expose to the network</div>
+                <div class="settings-row-desc">Allow other devices or services to access the local server.</div>
+              </div>
+            </div>
+            <div class="toggle on" id="toggleNetwork"></div>
+          </div>
+          <!-- Model location -->
+          <div class="settings-input-row">
+            <div style="display:flex;align-items:center;margin-bottom:4px">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Model location</div>
+                <div class="settings-row-desc">Location where models are stored.</div>
+              </div>
+            </div>
+            <div class="settings-input-wrap">
+              <input type="text" id="modelPathInput" value="C:\Users\kotas\.ollama\models" readonly />
+              <button class="pill-btn outline" id="browseModelPath">Browse</button>
+            </div>
+          </div>
+          <!-- Context length -->
+          <div class="settings-slider-row">
+            <div style="display:flex;align-items:center;margin-bottom:4px">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+                  <path d="M12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6.11 11.89L12 15z"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Context length <span id="contextValue" style="color:var(--text-muted);font-size:12px;font-weight:400;margin-left:6px">256k</span></div>
+                <div class="settings-row-desc">Context length determines how much of your conversation local LLMs can remember and use to generate responses.</div>
+              </div>
+            </div>
+            <div class="slider-wrap" id="contextSliderWrap">
+              <div class="slider-track-bg"></div>
+              <div class="slider-track-fill" id="contextSliderFill"></div>
+              <div class="slider-thumb" id="contextSliderThumb"></div>
+            </div>
+            <div class="slider-labels">
+              <span data-idx="0">4k</span><span data-idx="1">8k</span><span data-idx="2">16k</span><span data-idx="3">32k</span><span data-idx="4">64k</span><span data-idx="5">128k</span><span data-idx="6">256k</span>
+            </div>
+          </div>
+          <!-- Close behavior -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M9 3v18"/><path d="M15 3v18"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Close behavior</div>
+                <div class="settings-row-desc">What happens when you close the window.</div>
+              </div>
+            </div>
+            <div class="close-behavior-options" id="closeBehaviorOptions">
+              <button class="pill-btn outline" data-val="tray" id="cbTray">Keep running</button>
+              <button class="pill-btn outline" data-val="quit" id="cbQuit">Quit</button>
+            </div>
+          </div>
+          <!-- Effort -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Effort</div>
+                <div class="settings-row-desc">Higher effort means more thorough responses but takes longer.</div>
+              </div>
+            </div>
+            <div class="close-behavior-options" id="effortOptions">
+              <button class="pill-btn outline" data-val="low" id="effLow">Low</button>
+              <button class="pill-btn outline" data-val="medium" id="effMedium">Medium</button>
+              <button class="pill-btn outline" data-val="high" id="effHigh">High</button>
+              <button class="pill-btn outline" data-val="max" id="effMax">Max</button>
+            </div>
+          </div>
+          <!-- Thinking -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Thinking</div>
+                <div class="settings-row-desc">Enable step-by-step reasoning for complex tasks.</div>
+              </div>
+            </div>
+            <div class="toggle" id="toggleThinking"></div>
+          </div>
+          <!-- Release Notes -->
+          <div class="settings-row" id="releaseNotesRow" style="cursor:pointer">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Release Notes</div>
+                <div class="settings-row-desc">See what's new and what changed.</div>
+              </div>
+            </div>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+        <div class="settings-footer">
+          <button class="pill-btn primary" id="resetDefaults" style="background:var(--text);color:var(--bg)">Reset to defaults</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Release Notes View -->
+    <div id="viewReleaseNotes" class="chat-area">
+      <div id="topbar">
+        <button class="back-btn" id="backFromReleaseNotes">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        </button>
+        <span class="page-title">Release Notes</span>
+        <span class="app-version" id="releaseNotesVersion"></span>
+      </div>
+      <div class="page-content" id="releaseNotesContent" style="max-width:640px;margin:0 auto">
+        <div style="text-align:center;padding:40px;color:var(--text-muted)">Loading…</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="modalRoot" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;visibility:hidden;opacity:0;transition:opacity 0.15s"></div>
+
+<script src="md.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

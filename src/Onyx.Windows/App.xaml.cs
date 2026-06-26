@@ -16,16 +16,6 @@ public partial class App : Application
 
     public static new App Current => (App)Application.Current;
 
-    public ConfigService Config { get; private set; } = null!;
-    public OllamaClient Ollama { get; private set; } = null!;
-    public WebSearchService WebSearch { get; private set; } = null!;
-    public ChatStore Chats { get; private set; } = null!;
-
-    /// <summary>Populated by the background startup update check. UI is notified via Bridge.</summary>
-    public static string? PendingUpdatePath { get; set; }
-    public static string? PendingUpdateVersion { get; set; }
-    public static string? PendingUpdateError { get; set; }
-
     public static string DataDir { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Onyx");
 
@@ -66,7 +56,6 @@ public partial class App : Application
         _mutex = new Mutex(true, MutexName, out bool createdNew);
         if (!createdNew)
         {
-            // Another instance is running — bring it to front and exit
             BringExistingToFront();
             _mutex.Dispose();
             _mutex = null;
@@ -75,16 +64,15 @@ public partial class App : Application
         }
 
         base.OnStartup(e);
-        Directory.CreateDirectory(DataDir);
-        Config = new ConfigService(Path.Combine(DataDir, "config.json"));
-        Config.Load();
-        Ollama = new OllamaClient(() => Config.Current.ServerUrl);
-        WebSearch = new WebSearchService();
-        Chats = new ChatStore(Path.Combine(DataDir, "chats.json"));
-        Chats.Load();
+
+        // Initialize shared core context
+        AppContext.Initialize(DataDir);
+
+        // Register Windows-specific implementations
+        HardwareDetector.Instance = new WindowsHardwareDetector();
 
         // Background update check on startup (if enabled)
-        if (Config.Current.CheckUpdatesOnStartup)
+        if (AppContext.Current.Config.Current.CheckUpdatesOnStartup)
         {
             _ = Task.Run(async () =>
             {
@@ -95,20 +83,20 @@ public partial class App : Application
                     if (release == null) return;
                     if (string.IsNullOrEmpty(release.DownloadUrl))
                     {
-                        PendingUpdateError = "Update found but no download URL available.";
+                        AppContext.PendingUpdateError = "Update found but no download URL available.";
                         return;
                     }
                     var path = await updater.DownloadUpdateAsync(release);
                     if (!string.IsNullOrEmpty(path))
                     {
-                        PendingUpdatePath = path;
-                        PendingUpdateVersion = release.TagName;
+                        AppContext.PendingUpdatePath = path;
+                        AppContext.PendingUpdateVersion = release.TagName;
                         // Notify the UI window directly if it's already loaded
                         await Dispatcher.InvokeAsync(() =>
                         {
                             if (MainWindow is MainWindow win && win.IsLoaded)
                             {
-                                win.PostWebMessageAsJson(System.Text.Json.JsonSerializer.Serialize(new
+                                win.PostWebMessageAsJson(JsonSerializer.Serialize(new
                                 {
                                     @event = "updateReady",
                                     version = release.TagName,
@@ -120,7 +108,7 @@ public partial class App : Application
                 }
                 catch (Exception ex)
                 {
-                    PendingUpdateError = ex.Message;
+                    AppContext.PendingUpdateError = ex.Message;
                 }
             });
         }
@@ -130,7 +118,6 @@ public partial class App : Application
     {
         try
         {
-            // Find the existing Onyx process that isn't this one
             var currentId = Environment.ProcessId;
             foreach (var proc in System.Diagnostics.Process.GetProcessesByName("Onyx"))
             {
@@ -148,8 +135,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        Config?.Save();
-        Chats?.Save();
+        AppContext.Current?.SaveAll();
         try { _mutex?.ReleaseMutex(); } catch { }
         _mutex?.Dispose();
         base.OnExit(e);

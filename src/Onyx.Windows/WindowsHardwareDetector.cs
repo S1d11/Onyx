@@ -1,23 +1,17 @@
 using System;
 using System.Linq;
 using System.Management;
+using Ollama2.Services;
 
-namespace Ollama2.Services;
+namespace Ollama2;
 
-public record HardwareInfo(
-    string CpuName,
-    ulong TotalRamBytes,
-    string? GpuName,
-    ulong? GpuVramBytes
-)
+/// <summary>
+/// Windows-specific hardware detection using WMI.
+/// Registered into <see cref="HardwareDetector.Instance"/> on startup.
+/// </summary>
+public sealed class WindowsHardwareDetector : IHardwareDetector
 {
-    public double TotalRamGb => Math.Round(TotalRamBytes / (1024.0 * 1024.0 * 1024.0), 1);
-    public double? GpuVramGb => GpuVramBytes.HasValue ? Math.Round(GpuVramBytes.Value / (1024.0 * 1024.0 * 1024.0), 1) : null;
-}
-
-public static class HardwareDetector
-{
-    public static HardwareInfo Detect()
+    public HardwareInfo Detect()
     {
         string cpuName = "Unknown";
         ulong totalRam = 0;
@@ -55,14 +49,13 @@ public static class HardwareDetector
                 var vram = obj["AdapterRAM"] as uint?;
                 if (!string.IsNullOrEmpty(name) && vram.HasValue && vram.Value > 0)
                 {
-                    // Skip generic/basic display adapters
                     var lower = name.ToLowerInvariant();
                     if (lower.Contains("basic") || lower.Contains("standard vga") || lower.Contains("microsoft basic"))
                         continue;
 
                     gpuName = name;
                     gpuVram = vram.Value;
-                    break; // Use the first valid dedicated GPU
+                    break;
                 }
             }
         }

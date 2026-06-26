@@ -8,12 +8,12 @@
 param(
   [switch]$MakeInstaller,
   [string]$Configuration = "Release",
-  [string]$AppVersion = "2.16.1"
+  [string]$AppVersion = "2.17.0"
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$proj = Join-Path $root "src\Ollama2\Ollama2.csproj"
+$proj = Join-Path $root "src\Onyx.Windows\Onyx.Windows.csproj"
 $publishDir = Join-Path $root "publish"
 $exe = Join-Path $publishDir "Onyx.exe"
 
