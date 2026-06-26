@@ -216,6 +216,27 @@ public class OrchestratorService
             }
         }
 
+        // ALWAYS run semantic routing as a fallback, even for Chat/Code/etc.
+        // The LLM classifier often misclassifies tool requests as "chat" (e.g. "make a folder"
+        // gets classified as Chat 99%). The semantic router catches these by matching the
+        // user's message against tool descriptions. If it finds a strong match, we run the tool
+        // regardless of what the classifier said.
+        if (tools.Count == 0)
+        {
+            OnStage("routing", "Finding the right tool...");
+            var fallbackMatch = await _router.MatchToolAsync(userMessage, threshold: 0.30, ct: ct);
+            if (!string.IsNullOrEmpty(fallbackMatch))
+            {
+                tools.AddIfMissing(fallbackMatch);
+                // Force the intent to ToolUse so the system prompt guidance applies
+                if (intent.Type != IntentType.ToolUse)
+                {
+                    intent.Type = IntentType.ToolUse;
+                    intent.ShouldExecuteTools = true;
+                }
+            }
+        }
+
         // Only auto-execute if the intent says so.
         // BUT: if the intent is explicitly toolUse with a target tool, always execute
         // (the LLM was confident enough to name a specific tool)
