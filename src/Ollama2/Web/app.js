@@ -706,7 +706,7 @@
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
     // Register per-chat streaming state
-    state.streaming.set(chat.id, { el, text: "", sources: null, searchStatusEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
+    state.streaming.set(chat.id, { el, text: "", sources: null, searchStatusEl: null, tempSourcesEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
     setStreamingUI(true);
     renderChatList(); // show streaming indicator
 
@@ -794,6 +794,9 @@
       return;
     }
 
+    // Remove temporary sources block from onSearchResults before rendering final message
+    if (stream.tempSourcesEl) { stream.tempSourcesEl.remove(); stream.tempSourcesEl = null; }
+
     if (stream.el) {
       renderAssistantBody(stream.el.querySelector(".msg-body"), mainText, {
         thinking: thinkingText,
@@ -823,6 +826,7 @@
     state.streaming.delete(msg.chatId);
     if (msg.chatId === state.currentId) setStreamingUI(false);
     renderChatList(); // remove streaming indicator
+    if (stream && stream.tempSourcesEl) { stream.tempSourcesEl.remove(); stream.tempSourcesEl = null; }
     if (stream && stream.el) {
       stream.el.querySelector(".msg-body").innerHTML = `<div class="msg-error">${OllamaMD.escape(msg.message)}</div>`;
     } else {
@@ -855,9 +859,12 @@
     if (stream && msg.results) {
       stream.sources = msg.results;
     }
+    // Show temporary sources block below the streaming message; will be removed when chat completes
     if (msg.chatId === state.currentId && msg.results && msg.results.length) {
-      $("#messages").appendChild(buildSourcesEl(msg.results, false));
+      const tempSources = buildSourcesEl(msg.results, false);
+      $("#messages").appendChild(tempSources);
       $("#messages").scrollTop = $("#messages").scrollHeight;
+      if (stream) stream.tempSourcesEl = tempSources;
     }
   }
 
@@ -890,7 +897,7 @@
     });
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
-    state.streaming.set(c.id, { el, text: "", sources: null, searchStatusEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
+    state.streaming.set(c.id, { el, text: "", sources: null, searchStatusEl: null, tempSourcesEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
     setStreamingUI(true);
     renderChatList();
     call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearchMode: state.config?.webSearchMode || (state.config?.webSearchEnabled ? "auto" : "off") });
