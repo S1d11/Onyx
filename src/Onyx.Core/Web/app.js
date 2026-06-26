@@ -133,7 +133,15 @@
     $("#viewLaunch").classList.toggle("active", name === "launch");
     $("#viewSettings").classList.toggle("active", name === "settings");
     $("#viewReleaseNotes").classList.toggle("active", name === "releaseNotes");
-    if (name === "chat") $("#promptInput").focus();
+    // Hide sidebar on settings/launch/release notes views, show on chat
+    const hideSidebar = name !== "chat";
+    $("#sidebar").classList.toggle("collapsed", hideSidebar);
+    $("#topbarNewChat").classList.toggle("hidden", !hideSidebar && (state.config?.sidebarVisible));
+    if (name === "chat") {
+      // Restore sidebar visibility based on config only if it was visible
+      if (state.config?.sidebarVisible) $("#sidebar").classList.remove("collapsed");
+      $("#promptInput").focus();
+    }
   }
 
   // ---- chat list ----
