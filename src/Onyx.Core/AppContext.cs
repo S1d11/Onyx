@@ -37,9 +37,14 @@ public sealed class AppContext
         Orchestrator = new OrchestratorService(Ollama, () => Config.Current.DefaultModel);
         Orchestrator.Tools.Register(WebSearchTool.Definition, new WebSearchTool(WebSearch, Config.Current.MaxSearchResults));
 
-        // Register the system tool if platform-specific system access is available
+        // Register the filesystem connector (always available if system access exists)
         if (systemAccess != null)
         {
+            var fsConnector = new FilesystemConnector(systemAccess);
+            Orchestrator.Tools.Register(FilesystemConnector.Definition, fsConnector);
+            FilesystemConnector = fsConnector;
+
+            // Register the system/OS tool (registry, shell, env, processes, PATH, system info)
             var systemTool = new SystemTool(Ollama, () => Config.Current.DefaultModel, systemAccess);
             Orchestrator.Tools.Register(SystemTool.Definition, systemTool);
             SystemTool = systemTool;
@@ -57,6 +62,7 @@ public sealed class AppContext
     public WebSearchService WebSearch { get; }
     public ChatStore Chats { get; }
     public OrchestratorService Orchestrator { get; }
+    public FilesystemConnector? FilesystemConnector { get; }
     public SystemTool? SystemTool { get; }
     public GitHubConnector GitHubConnector { get; } = null!;
 

@@ -121,21 +121,10 @@ public class SystemTool : ITool
     }
 
     private string BuildParserPrompt(string platform, string homeDir, string downloadsDir, string desktopDir, string documentsDir) =>
-        "You are a system action parser. The user wants to perform an operation on their " + platform + " computer.\n" +
-        "Analyze their request and determine the specific system action to perform.\n" +
+        "You are a system/OS action parser. The user wants to perform an OS-level operation on their " + platform + " computer.\n" +
+        "Filesystem operations (read/write/delete/list files) are handled by a separate tool — do NOT use them here.\n" +
         "Respond ONLY with a JSON object — no markdown, no explanation.\n\n" +
-        "USER'S ACTUAL DIRECTORY PATHS (use these EXACT paths — never use placeholders like {user} or ~):\n" +
-        "  Home directory: " + homeDir + "\n" +
-        "  Downloads:      " + downloadsDir + "\n" +
-        "  Desktop:        " + desktopDir + "\n" +
-        "  Documents:      " + documentsDir + "\n\n" +
         "Available actions:\n" +
-        "- \"list_dir\": List directory contents. Params: {\"path\": \"" + homeDir.Replace("\\", "\\\\") + "\\\\...\"}\n" +
-        "- \"read_file\": Read a file's contents. Params: {\"path\": \"...\"}\n" +
-        "- \"write_file\": Write content to a file (destructive). Params: {\"path\": \"...\", \"content\": \"...\"}\n" +
-        "- \"delete_file\": Delete a file or directory (destructive). Params: {\"path\": \"...\"}\n" +
-        "- \"create_dir\": Create a directory. Params: {\"path\": \"...\"}\n" +
-        "- \"file_info\": Get file/directory info (size, dates, attributes). Params: {\"path\": \"...\"}\n" +
         "- \"run_command\": Execute a shell command (destructive). Params: {\"shell\": \"cmd|powershell|pwsh|bash\", \"command\": \"...\"}\n" +
         "- \"registry_read\": Read a registry value (Windows only). Params: {\"keyPath\": \"HKLM\\\\Software\\\\...\", \"valueName\": \"...\"}\n" +
         "- \"registry_write\": Write a registry value (destructive, Windows only). Params: {\"keyPath\": \"...\", \"valueName\": \"...\", \"value\": \"...\"}\n" +
@@ -150,17 +139,12 @@ public class SystemTool : ITool
         "- \"processes\": List running processes. Params: {}\n" +
         "- \"kill_process\": Kill a process (destructive). Params: {\"pid\": 1234}\n\n" +
         "Respond with this JSON structure:\n" +
-        "{\"action\":\"create_dir\",\"params\":{\"path\":\"" + downloadsDir.Replace("\\", "\\\\") + "\\\\hello\"},\"isDestructive\":false,\"description\":\"Create folder hello in Downloads\"}\n\n" +
+        "{\"action\":\"run_command\",\"params\":{\"shell\":\"powershell\",\"command\":\"Get-Process\"},\"isDestructive\":false,\"description\":\"List running processes via PowerShell\"}\n\n" +
         "Rules:\n" +
         "- \"action\" must be one of the exact values listed above\n" +
         "- \"params\" contains the action-specific parameters\n" +
-        "- \"isDestructive\" is true for: write_file, delete_file, run_command, registry_write, registry_delete, env_set, path_add, kill_process\n" +
+        "- \"isDestructive\" is true for: run_command, registry_write, registry_delete, env_set, path_add, kill_process\n" +
         "- \"description\" is a short human-readable summary of what will happen\n" +
-        "- ALWAYS use the EXACT absolute paths provided above. Never use {user}, %USERPROFILE%, ~, or any placeholder.\n" +
-        "- If the user says 'my downloads', use: " + downloadsDir + "\n" +
-        "- If the user says 'my desktop', use: " + desktopDir + "\n" +
-        "- If the user says 'my documents', use: " + documentsDir + "\n" +
-        "- If the user says 'my home', use: " + homeDir + "\n" +
         "- For shell commands, choose the appropriate shell (cmd for Windows batch, powershell for PowerShell, bash for Unix).\n" +
         "- Platform: " + platform + "\n";
 
@@ -181,27 +165,6 @@ public class SystemTool : ITool
 
         switch (action.Action)
         {
-            case "list_dir":
-                sb.Append(await _system.ListDirectoryAsync(GetStr(p, "path"), ct));
-                break;
-            case "read_file":
-                sb.Append(await _system.ReadFileAsync(GetStr(p, "path"), ct));
-                break;
-            case "write_file":
-                sb.Append(await _system.WriteFileAsync(GetStr(p, "path"), GetStr(p, "content"), ct));
-                break;
-            case "delete_file":
-                sb.Append(await _system.DeleteFileAsync(GetStr(p, "path"), ct));
-                break;
-            case "create_dir":
-                sb.Append(await _system.CreateDirectoryAsync(GetStr(p, "path"), ct));
-                break;
-            case "file_info":
-                sb.Append(await _system.GetFileInfoAsync(GetStr(p, "path"), ct));
-                break;
-            case "file_exists":
-                sb.Append(await _system.FileExistsAsync(GetStr(p, "path"), ct));
-                break;
             case "run_command":
                 sb.Append(await _system.RunCommandAsync(GetStr(p, "shell", "cmd"), GetStr(p, "command"), ct));
                 break;
@@ -315,9 +278,9 @@ public class SystemTool : ITool
     public static ToolDefinition Definition => new()
     {
         Name = "system",
-        Description = "Full system access: filesystem (read/write/delete files and directories), shell (run cmd/powershell/bash commands), registry (read/write/delete on Windows), environment variables, PATH management, process management, and system info. Use when the user wants to interact with their computer.",
+        Description = "OS-level system access: run shell commands (cmd/powershell/bash), manage Windows registry, environment variables, PATH, processes, and get system info. Does NOT handle filesystem operations — those are handled by the filesystem connector. Use when the user wants to run commands, modify registry/env/PATH, or manage processes.",
         Category = "system",
-        Triggers = new() { "file", "directory", "folder", "shell", "command", "registry", "environment", "path", "process", "system", "cmd", "powershell", "bash", "delete", "create", "read", "write", "run", "execute", "install", "kill", "tasklist", "taskkill" },
+        Triggers = new() { "shell", "command", "registry", "environment", "path", "process", "system", "cmd", "powershell", "bash", "run", "execute", "install", "kill", "tasklist", "taskkill", "variable", "env var" },
         RequiresConfirmation = true,
         Enabled = true,
     };
