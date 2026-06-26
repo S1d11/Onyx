@@ -24,6 +24,8 @@ public class AppConfig
     public bool ExposeToNetwork { get; set; } = false;
     public string ModelPath { get; set; } = "";
     public bool Stream { get; set; } = true;
+    public string Effort { get; set; } = "medium"; // "low", "medium", "high", "max"
+    public bool ThinkingEnabled { get; set; } = false;
 }
 
 public class ModelInfo

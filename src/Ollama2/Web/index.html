@@ -258,6 +258,41 @@
               <button class="pill-btn outline" data-val="quit" id="cbQuit">Quit</button>
             </div>
           </div>
+          <!-- Effort -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Effort</div>
+                <div class="settings-row-desc">Higher effort means more thorough responses but takes longer.</div>
+              </div>
+            </div>
+            <div class="close-behavior-options" id="effortOptions">
+              <button class="pill-btn outline" data-val="low" id="effLow">Low</button>
+              <button class="pill-btn outline" data-val="medium" id="effMedium">Medium</button>
+              <button class="pill-btn outline" data-val="high" id="effHigh">High</button>
+              <button class="pill-btn outline" data-val="max" id="effMax">Max</button>
+            </div>
+          </div>
+          <!-- Thinking -->
+          <div class="settings-row">
+            <div style="display:flex;align-items:center;flex:1">
+              <div class="settings-row-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+                </svg>
+              </div>
+              <div class="settings-row-text">
+                <div class="settings-row-title">Thinking</div>
+                <div class="settings-row-desc">Enable step-by-step reasoning for complex tasks.</div>
+              </div>
+            </div>
+            <div class="toggle" id="toggleThinking"></div>
+          </div>
         </div>
         <div class="settings-footer">
           <button class="pill-btn primary" id="resetDefaults" style="background:var(--text);color:var(--bg)">Reset to defaults</button>

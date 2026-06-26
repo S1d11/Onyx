@@ -276,6 +276,10 @@ internal sealed class Bridge
             if (!string.IsNullOrWhiteSpace(cfg.SystemPrompt))
                 sendMessages.Insert(0, new ChatMessage { Role = "system", Content = cfg.SystemPrompt });
 
+            // Thinking mode: add a reasoning system prompt.
+            if (cfg.ThinkingEnabled)
+                sendMessages.Insert(0, new ChatMessage { Role = "system", Content = "Think step-by-step. Break down complex problems, consider multiple angles, and explain your reasoning clearly before giving the final answer." });
+
             // ---- Web search (replicates Ollama's built-in web search UX) ----
             if (webSearch && cfg.WebSearchEnabled)
             {
@@ -304,7 +308,7 @@ internal sealed class Bridge
                 Stream = true,
                 Options = new Dictionary<string, object>
                 {
-                    { "temperature", cfg.Temperature },
+                    { "temperature", EffortToTemperature(cfg.Effort) },
                     { "top_k", cfg.TopK },
                     { "top_p", cfg.TopP },
                     { "num_ctx", cfg.NumCtx },
@@ -367,6 +371,16 @@ internal sealed class Bridge
         }
         return true;
     }
+
+    private static double EffortToTemperature(string effort)
+        => effort?.ToLowerInvariant() switch
+        {
+            "low" => 0.3,
+            "medium" => 0.7,
+            "high" => 0.95,
+            "max" => 1.2,
+            _ => 0.7,
+        };
 
     private static string BuildSearchContext(WebSearchResult search)
     {

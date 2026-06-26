@@ -245,6 +245,13 @@
   }
 
   // ---- model picker ----
+  const EFFORT_LEVELS = [
+    { key: "low",    label: "Low",    desc: "Faster responses, less thorough" },
+    { key: "medium", label: "Medium", desc: "Balanced speed and quality" },
+    { key: "high",   label: "High",   desc: "More thorough, takes longer" },
+    { key: "max",    label: "Max",    desc: "Maximum depth, slowest" },
+  ];
+
   function renderModelMenu() {
     const menu = $("#modelMenu");
     menu.innerHTML = "";
@@ -272,7 +279,55 @@
       it.addEventListener("click", () => { selectModel(mo.name); closeModelMenu(); });
       menu.appendChild(it);
     });
-    const sep = document.createElement("div"); sep.className = "mm-sep"; menu.appendChild(sep);
+
+    // ---- Effort selector ----
+    const sep1 = document.createElement("div"); sep1.className = "mm-sep"; menu.appendChild(sep1);
+    const effortLabel = document.createElement("div");
+    effortLabel.className = "mm-section-label"; effortLabel.textContent = "Effort";
+    menu.appendChild(effortLabel);
+    const currentEffort = state.config?.effort || "medium";
+    EFFORT_LEVELS.forEach(lvl => {
+      const row = document.createElement("div");
+      row.className = "mm-effort-row" + (lvl.key === currentEffort ? " selected" : "");
+      row.dataset.effort = lvl.key;
+      row.innerHTML = `
+        <div class="mm-effort-name">${OllamaMD.escape(lvl.label)}</div>
+        <div class="mm-effort-desc">${OllamaMD.escape(lvl.desc)}</div>
+      `;
+      row.addEventListener("click", async () => {
+        if (state.config) {
+          state.config.effort = lvl.key;
+          await call("saveConfig", { config: state.config });
+        }
+        renderModelMenu();
+      });
+      menu.appendChild(row);
+    });
+
+    // ---- Thinking toggle ----
+    const sep2 = document.createElement("div"); sep2.className = "mm-sep"; menu.appendChild(sep2);
+    const thinkingOn = state.config?.thinkingEnabled === true;
+    const thinkingRow = document.createElement("div");
+    thinkingRow.className = "mm-thinking-row";
+    thinkingRow.innerHTML = `
+      <div class="mm-thinking-left">
+        <div class="mm-thinking-title">Thinking</div>
+        <div class="mm-thinking-desc">Can think through complex tasks step-by-step</div>
+      </div>
+      <div class="toggle ${thinkingOn ? "on" : ""}" id="modelMenuThinking"></div>
+    `;
+    thinkingRow.addEventListener("click", async () => {
+      if (!state.config) return;
+      const t = thinkingRow.querySelector("#modelMenuThinking");
+      const on = !t.classList.contains("on");
+      t.classList.toggle("on", on);
+      state.config.thinkingEnabled = on;
+      await call("saveConfig", { config: state.config });
+    });
+    menu.appendChild(thinkingRow);
+
+    // ---- Actions ----
+    const sep3 = document.createElement("div"); sep3.className = "mm-sep"; menu.appendChild(sep3);
     const pull = document.createElement("div"); pull.className = "mm-action";
     pull.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Pull a model…</span>`;
     pull.addEventListener("click", () => { closeModelMenu(); showPullModal(); });
@@ -637,6 +692,30 @@
       };
     });
 
+    // Effort buttons
+    const eff = cfg.effort || "medium";
+    $$("#effortOptions .pill-btn").forEach(btn => btn.classList.remove("selected"));
+    const effBtn = $(`#effortOptions [data-val="${eff}"]`);
+    if (effBtn) effBtn.classList.add("selected");
+    $$("#effortOptions .pill-btn").forEach(btn => {
+      btn.onclick = () => {
+        $$("#effortOptions .pill-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        const val = btn.dataset.val;
+        if (state.config) { state.config.effort = val; call("saveConfig", { config: state.config }); }
+        toast(`Effort set to ${val}`);
+      };
+    });
+
+    // Thinking toggle
+    const thinkToggle = $("#toggleThinking");
+    thinkToggle.classList.toggle("on", cfg.thinkingEnabled === true);
+    thinkToggle.onclick = () => {
+      const on = thinkToggle.classList.toggle("on");
+      if (state.config) { state.config.thinkingEnabled = on; call("saveConfig", { config: state.config }); }
+      toast(on ? "Thinking enabled" : "Thinking disabled");
+    };
+
     // Reset to defaults
     $("#resetDefaults").onclick = () => {
       if (!confirm("Reset all settings to defaults?")) return;
@@ -647,6 +726,7 @@
         temperature: 0.8, topK: 40, topP: 0.9, numCtx: 4096,
         systemPrompt: "", maxSearchResults: 5, closeBehavior: "tray",
         checkUpdatesOnStartup: true, exposeToNetwork: false, modelPath: "", stream: true,
+        effort: "medium", thinkingEnabled: false,
       };
       state.config = { ...state.config, ...defaults };
       call("saveConfig", { config: state.config });
