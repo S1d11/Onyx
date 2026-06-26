@@ -105,6 +105,11 @@
   function renderChatList() {
     const list = $("#chatList");
     list.innerHTML = "";
+    if (state.chats.length === 0) return;
+    const label = document.createElement("div");
+    label.className = "chat-list-label";
+    label.textContent = "Chats";
+    list.appendChild(label);
     state.chats.forEach(c => {
       const el = document.createElement("div");
       el.className = "chat-item";

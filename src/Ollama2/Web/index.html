@@ -37,14 +37,14 @@
         <span>Settings</span>
       </button>
     </div>
-    <div id="chatList" class="chat-list"></div>
+    <div id="chatList" class="chat-list-section"></div>
   </aside>
 
   <!-- Main -->
   <main id="main">
     <!-- Chat View -->
     <div id="viewChat" class="chat-area active">
-      <div id="topbar" style="padding:0 16px;">
+      <div id="topbar">
         <button class="icon-btn hidden" id="topbarNewChat" title="New Chat" style="margin-left:auto">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
         </button>
@@ -63,41 +63,43 @@
             <ellipse cx="40" cy="52" rx="11" ry="6" fill="#FAFAFA" opacity="0.9"/>
           </svg>
         </div>
-        <div class="empty-welcome">Where should we begin?</div>
+        <div class="empty-welcome">How can I help you today?</div>
       </div>
       <div class="composer-wrapper">
         <div class="composer-box">
           <div id="pendingImages" class="pending-images"></div>
-          <textarea id="promptInput" rows="1" placeholder="Send a message..."></textarea>
-          <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
-          <div class="composer-actions">
-            <button id="attachBtn" class="icon-btn" title="Attach file">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84L9.41 17.41a2 2 0 0 1-2.83-2.83L15.07 6.1"/>
-              </svg>
-            </button>
-            <button id="webSearchToggle" class="icon-btn" title="Search the web">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              </svg>
-            </button>
-            <div class="model-picker" id="composerModelPicker">
-              <button id="modelPill" class="model-btn">
-                <span id="composerModelLabel">Select</span>
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <div class="composer-input-row">
+            <textarea id="promptInput" rows="1" placeholder="Send a message..."></textarea>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+            <div class="composer-actions">
+              <button id="attachBtn" class="icon-btn" title="Attach file">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84L9.41 17.41a2 2 0 0 1-2.83-2.83L15.07 6.1"/>
+                </svg>
               </button>
-              <div id="modelMenu" class="model-menu"></div>
-              <div id="effortMenu" class="effort-menu"></div>
+              <button id="webSearchToggle" class="icon-btn" title="Search the web">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+              </button>
+              <div class="model-picker" id="composerModelPicker">
+                <button id="modelPill" class="model-btn">
+                  <span id="composerModelLabel">Select</span>
+                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div id="modelMenu" class="model-menu"></div>
+                <div id="effortMenu" class="effort-menu"></div>
+              </div>
+              <button id="sendBtn" class="send-btn" title="Send message">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 2L11 13"/>
+                  <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+              </button>
+              <button id="stopBtn" class="send-btn hidden" title="Stop generation">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              </button>
             </div>
-            <button id="sendBtn" class="send-btn" title="Send message">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 2L11 13"/>
-                <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
-              </svg>
-            </button>
-            <button id="stopBtn" class="send-btn hidden" title="Stop generation">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-            </button>
           </div>
         </div>
       </div>
@@ -135,15 +137,10 @@
           <div class="settings-profile">
             <div class="profile-left">
               <div class="profile-name" id="profileName">User</div>
-              <div class="profile-email" id="profileEmail">user@example.com</div>
+              <div class="profile-email" id="profileEmail">Local instance</div>
             </div>
             <div class="profile-right">
               <div class="profile-avatar" id="profileAvatar">U</div>
-              <div class="profile-actions">
-                <button class="pill-btn primary">Upgrade</button>
-                <button class="pill-btn outline">Manage</button>
-                <button class="pill-btn outline">Sign out</button>
-              </div>
             </div>
           </div>
           <!-- Cloud -->
