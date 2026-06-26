@@ -1,4 +1,4 @@
-# Build + publish Ollama as a self-contained single-file Windows .exe,
+# Build + publish Onyx as a self-contained single-file Windows .exe,
 # then build the .exe installer with Inno Setup (if installed).
 #
 # Usage:
@@ -8,14 +8,14 @@
 param(
   [switch]$MakeInstaller,
   [string]$Configuration = "Release",
-  [string]$AppVersion = "2.0.0"
+  [string]$AppVersion = "2.11.0"
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $proj = Join-Path $root "src\Ollama2\Ollama2.csproj"
 $publishDir = Join-Path $root "publish"
-$exe = Join-Path $publishDir "Ollama2.exe"
+$exe = Join-Path $publishDir "Onyx.exe"
 
 Write-Host "==> Restoring packages" -ForegroundColor Cyan
 dotnet restore $proj | Out-Null

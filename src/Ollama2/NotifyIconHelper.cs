@@ -20,7 +20,7 @@ internal sealed class NotifyIconHelper : IDisposable
         _icon = new NotifyIcon
         {
             Icon = CreateIcon(),
-            Text = "Ollama 2.0",
+            Text = "Onyx",
             Visible = true,
             ContextMenuStrip = BuildMenu(),
         };
@@ -32,18 +32,27 @@ internal sealed class NotifyIconHelper : IDisposable
 
     private static Icon CreateIcon()
     {
-        // Draw a simple "llama-ish" rounded glyph at 32x32. The real app ships an
-        // icon resource; this keeps the build self-contained with no binary asset.
+        // Draw a gemstone silhouette at 32x32 — the Onyx brand mark.
         using var bmp = new Bitmap(32, 32);
         using (var g = Graphics.FromImage(bmp))
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            g.Clear(Color.FromArgb(0x0B, 0x0D, 0x0F));
-            using var brush = new SolidBrush(Color.FromArgb(0xD9, 0x77, 0x57));
-            g.FillEllipse(brush, 3, 3, 26, 26);
-            using var pen = new Pen(Color.White, 2);
-            // stylized "O"
-            g.DrawEllipse(pen, 9, 9, 14, 14);
+            g.Clear(Color.FromArgb(0x0C, 0x0C, 0x0E));
+            // Gem outline: diamond shape
+            var points = new System.Drawing.PointF[]
+            {
+                new(16, 3),   // top
+                new(28, 14),  // right
+                new(16, 29),  // bottom
+                new(4, 14),   // left
+            };
+            using var brush = new SolidBrush(Color.FromArgb(0xE4, 0xE4, 0xE7));
+            g.FillPolygon(brush, points);
+            // Facet lines
+            using var pen = new Pen(Color.FromArgb(0x0C, 0x0C, 0x0E), 1.5f);
+            g.DrawLine(pen, 4, 14, 28, 14);   // horizontal girdle
+            g.DrawLine(pen, 10, 14, 16, 3);   // upper-left facet
+            g.DrawLine(pen, 22, 14, 16, 3);   // upper-right facet
         }
         var handle = bmp.GetHicon();
         return Icon.FromHandle(handle);
@@ -61,7 +70,7 @@ internal sealed class NotifyIconHelper : IDisposable
             "{\"event\":\"menu\",\"action\":\"preferences\"}"));
         menu.Items.Add("-");
         menu.Items.Add("Show Window", null, (_, _) => _owner.BringToFront());
-        menu.Items.Add("Quit Ollama 2.0", null, (_, _) => _owner.CloseApp());
+        menu.Items.Add("Quit Onyx", null, (_, _) => _owner.CloseApp());
         return menu;
     }
 

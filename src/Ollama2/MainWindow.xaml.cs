@@ -28,7 +28,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(this, "Failed to initialize WebView2.\n" + ex.Message,
-                "Ollama 2.0", MessageBoxButton.OK, MessageBoxImage.Error);
+                "Onyx", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         _tray = new NotifyIconHelper(this);
         EnableDarkTitleBar();
@@ -55,19 +55,19 @@ public partial class MainWindow : Window
         var core = WebView.CoreWebView2;
 
         var webRoot = ExtractWebAssets();
-        core.SetVirtualHostNameToFolderMapping("ollama.app", webRoot,
+        core.SetVirtualHostNameToFolderMapping("onyx.app", webRoot,
             CoreWebView2HostResourceAccessKind.Allow);
         core.Settings.AreDevToolsEnabled = true;
         core.Settings.AreDefaultContextMenusEnabled = true;
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.IsZoomControlEnabled = true;
-        core.Settings.UserAgent = "Ollama2.0/2.4 (Windows; +https://ollama.com)";
+        core.Settings.UserAgent = "Onyx/2.11 (Windows; +https://github.com/S1d11/Ollama-2.0)";
 
         core.WebMessageReceived += OnWebMessageReceived;
         core.NavigationCompleted += (_, _) => _bridge.SendInitialState();
 
         var cacheBuster = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-        core.Navigate($"https://ollama.app/index.html?v={cacheBuster}");
+        core.Navigate($"https://onyx.app/index.html?v={cacheBuster}");
     }
 
     private static string ExtractWebAssets()
@@ -140,7 +140,7 @@ public partial class MainWindow : Window
 
         e.Cancel = true;
         Hide();
-        _tray?.ShowBalloon("Ollama 2.0", "Ollama 2.0 is still running in the background.");
+        _tray?.ShowBalloon("Onyx", "Onyx is still running in the background.");
     }
 
     public void CloseApp()

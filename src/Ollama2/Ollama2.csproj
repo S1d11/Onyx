@@ -6,10 +6,10 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Ollama2</RootNamespace>
-    <AssemblyName>Ollama2</AssemblyName>
-    <Version>2.0.0.0</Version>
-    <Company>Ollama-2.0</Company>
-    <Product>Ollama 2.0</Product>
+    <AssemblyName>Onyx</AssemblyName>
+    <Version>2.11.0.0</Version>
+    <Company>Onyx</Company>
+    <Product>Onyx</Product>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <Platforms>x64</Platforms>

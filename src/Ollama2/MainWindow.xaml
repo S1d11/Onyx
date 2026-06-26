@@ -2,17 +2,17 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-        Title="Ollama 2.0"
+        Title="Onyx"
         Height="800" Width="1200"
         MinHeight="500" MinWidth="720"
         WindowStartupLocation="CenterScreen"
-        Background="#000000"
+        Background="#0C0C0E"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         StateChanged="Window_StateChanged"
         Closing="Window_Closing"
         Loaded="Window_Loaded">
     <Grid>
-        <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#000000"/>
+        <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#0C0C0E"/>
     </Grid>
 </Window>

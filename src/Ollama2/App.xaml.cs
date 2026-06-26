@@ -12,7 +12,7 @@ namespace Ollama2;
 public partial class App : Application
 {
     private static Mutex? _mutex;
-    private const string MutexName = "Ollama2.0-SingleInstance-Mutex-v1";
+    private const string MutexName = "Onyx-SingleInstance-Mutex-v1";
 
     public static new App Current => (App)Application.Current;
 
@@ -27,7 +27,27 @@ public partial class App : Application
     public static string? PendingUpdateError { get; set; }
 
     public static string DataDir { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ollama2");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Onyx");
+
+    static App()
+    {
+        // Migrate data from the old "Ollama2" directory if the new "Onyx" directory doesn't exist yet
+        var oldDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ollama2");
+        if (Directory.Exists(oldDir) && !Directory.Exists(DataDir))
+        {
+            try
+            {
+                Directory.CreateDirectory(DataDir);
+                foreach (var file in Directory.GetFiles(oldDir, "*.*", SearchOption.TopDirectoryOnly))
+                {
+                    var name = Path.GetFileName(file);
+                    if (name == "config.json" || name == "chats.json")
+                        File.Copy(file, Path.Combine(DataDir, name), overwrite: false);
+                }
+            }
+            catch { /* best-effort migration */ }
+        }
+    }
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(nint hWnd);
@@ -110,9 +130,9 @@ public partial class App : Application
     {
         try
         {
-            // Find the existing Ollama2 process that isn't this one
+            // Find the existing Onyx process that isn't this one
             var currentId = Environment.ProcessId;
-            foreach (var proc in System.Diagnostics.Process.GetProcessesByName("Ollama2"))
+            foreach (var proc in System.Diagnostics.Process.GetProcessesByName("Onyx"))
             {
                 if (proc.Id == currentId) continue;
                 if (proc.MainWindowHandle == nint.Zero) continue;

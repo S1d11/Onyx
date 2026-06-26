@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ollama 2.0</title>
+<title>Onyx</title>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -52,15 +52,11 @@
       <div id="messages" class="messages"></div>
       <div id="emptyState" class="empty-state">
         <div class="empty-logo">
-          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="40" cy="40" r="36" stroke="#FAFAFA" stroke-width="2" fill="none" opacity="0.9"/>
-            <ellipse cx="40" cy="37" rx="20" ry="17" fill="#FAFAFA" opacity="0.9"/>
-            <circle cx="33" cy="34.5" r="2.5" fill="#18181B"/>
-            <circle cx="47" cy="34.5" r="2.5" fill="#18181B"/>
-            <path d="M36 42c1.5 2 4.5 2 6 0" stroke="#18181B" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-            <path d="M28 28c-2-2-4-2-5 0" stroke="#FAFAFA" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
-            <path d="M52 28c2-2 4-2 5 0" stroke="#FAFAFA" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
-            <ellipse cx="40" cy="52" rx="11" ry="6" fill="#FAFAFA" opacity="0.9"/>
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M32 6 L54 26 L32 58 L10 26 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M10 26 L54 26" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <path d="M22 26 L32 6 L42 26" stroke="currentColor" stroke-width="1.5" opacity="0.4" stroke-linejoin="round"/>
+            <path d="M22 26 L32 58 L42 26" stroke="currentColor" stroke-width="1.5" opacity="0.25" stroke-linejoin="round"/>
           </svg>
         </div>
         <div class="empty-welcome">How can I help you today?</div>
@@ -185,8 +181,8 @@
                 </svg>
               </div>
               <div class="settings-row-text">
-                <div class="settings-row-title">Expose Ollama to the network</div>
-                <div class="settings-row-desc">Allow other devices or services to access Ollama.</div>
+                <div class="settings-row-title">Expose to the network</div>
+                <div class="settings-row-desc">Allow other devices or services to access the local server.</div>
               </div>
             </div>
             <div class="toggle on" id="toggleNetwork"></div>

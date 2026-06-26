@@ -6,9 +6,9 @@
   #define AppVersion "2.0.0"
 #endif
 
-#define AppName "Ollama 2.0"
-#define AppExeName "Ollama2.exe"
-#define AppPublisher "Ollama-2.0"
+#define AppName "Onyx"
+#define AppExeName "Onyx.exe"
+#define AppPublisher "Onyx"
 
 [Setup]
 AppId={{8A7B9C1D-2E3F-4A5B-9C1D-0E1F2A3B4C5D}
@@ -16,13 +16,13 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
-AppPublisherURL=https://ollama.com
-AppSupportURL=https://github.com/ollama/ollama
+AppPublisherURL=https://github.com/S1d11/Ollama-2.0
+AppSupportURL=https://github.com/S1d11/Ollama-2.0
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 OutputDir=Output
-OutputBaseFilename=Ollama2Setup-{#AppVersion}
+OutputBaseFilename=OnyxSetup-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -58,4 +58,4 @@ Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName} now"; Flags: no
 Filename: "{cmd}"; Parameters: "/C taskkill /IM {#AppExeName} /F /T"; Flags: runhidden; RunOnceId: "KillApp"
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{localappdata}\Ollama2\web"
+Type: filesandordirs; Name: "{localappdata}\Onyx\web"

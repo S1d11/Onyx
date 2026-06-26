@@ -1,14 +1,16 @@
 :root {
-  --bg: #18181B;
-  --surface: #27272A;
-  --surface-hover: #3F3F46;
-  --surface-pressed: #52525B;
-  --border: #27272A;
-  --border-light: #3F3F46;
-  --text: #FAFAFA;
+  --bg: #0C0C0E;
+  --surface: #18181B;
+  --surface-hover: #27272A;
+  --surface-pressed: #3F3F46;
+  --border: #18181B;
+  --border-light: #27272A;
+  --text: #F4F4F5;
   --text-secondary: #A1A1AA;
   --text-muted: #71717A;
-  --accent-blue: #3B82F6;
+  --accent: #E4E4E7;
+  --accent-dim: #A1A1AA;
+  --accent-blue: #E4E4E7;
   --accent-green: #22C55E;
   --danger: #EF4444;
   --radius-sm: 6px;
@@ -265,7 +267,7 @@ button { cursor: pointer; }
 }
 .icon-btn:hover { background: var(--surface-hover); color: var(--text); transform: scale(1.05); }
 .icon-btn:active { transform: scale(0.95); }
-.icon-btn.active { background: var(--accent-blue); color: #fff; }
+.icon-btn.active { background: var(--accent); color: var(--bg); }
 .icon-btn.active:hover { opacity: 0.9; }
 
 /* ===== Chat Area / Views ===== */
@@ -312,7 +314,7 @@ button { cursor: pointer; }
   transition: font-size 0.3s ease;
 }
 .empty-logo {
-  width: 56px; height: 56px; color: var(--text); opacity: 0.9;
+  width: 56px; height: 56px; color: var(--accent); opacity: 0.85;
 }
 .empty-logo svg { width: 100%; height: 100%; }
 .empty-welcome { font-size: 22px; font-weight: 500; color: var(--text); margin-top: 20px; letter-spacing: -0.01em; }
@@ -332,7 +334,7 @@ button { cursor: pointer; }
 .msg-body h3 { font-size: 1.1em; font-weight: 600; margin: 16px 0 8px; }
 .msg-body ul, .msg-body ol { margin-bottom: 12px; padding-left: 24px; }
 .msg-body li { margin: 4px 0; }
-.msg-body a { color: var(--accent-blue); text-decoration: none; }
+.msg-body a { color: var(--accent); text-decoration: none; }
 .msg-body a:hover { text-decoration: underline; }
 .msg-body blockquote { border-left: 2px solid var(--border-light); padding-left: 14px; color: var(--text-secondary); margin-bottom: 12px; }
 .msg-body code { font-family: var(--font-mono); font-size: 0.88em; background: var(--surface); padding: 2px 6px; border-radius: 5px; }
@@ -358,7 +360,7 @@ button { cursor: pointer; }
 .sources-title { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
 .source-card { display: block; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius-md); margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color 0.1s, background 0.1s; }
 .source-card:hover { border-color: var(--text-muted); background: var(--surface-hover); }
-.source-card .sc-title { font-size: 13px; color: var(--accent-blue); font-weight: 500; }
+.source-card .sc-title { font-size: 13px; color: var(--accent); font-weight: 500; }
 .source-card .sc-url { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .source-card .sc-snippet { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
 
@@ -386,7 +388,7 @@ button { cursor: pointer; }
   transition: border-color 0.2s ease, box-shadow 0.2s ease, min-height 0.5s ease, padding 0.5s ease;
 }
 .composer-box:focus-within { border-color: var(--surface-hover); box-shadow: 0 0 0 3px rgba(250,250,250,0.04); }
-.composer-box.drag-over { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.composer-box.drag-over { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(228,228,231,0.12); }
 .composer-input-row { display: flex; align-items: flex-end; gap: 8px; }
 #promptInput {
   flex: 1; background: none; border: none; color: var(--text); resize: none;
@@ -480,7 +482,7 @@ button { cursor: pointer; }
   padding: 6px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
   transition: opacity 0.1s, background 0.1s;
 }
-.pill-btn.primary { background: var(--accent-blue); color: #fff; }
+.pill-btn.primary { background: var(--accent); color: var(--bg); }
 .pill-btn.outline { background: transparent; border: 1px solid var(--border-light); color: var(--text); }
 .pill-btn:hover { opacity: 0.85; }
 

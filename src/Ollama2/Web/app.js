@@ -89,7 +89,7 @@
     }
     renderChatList();
     if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
-    if (!data.serverReachable) toast("Ollama server not reachable. Is `ollama serve` running?");
+    if (!data.serverReachable) toast("Server not reachable. Is `ollama serve` running?");
   }
 
   // ---- View routing ----
@@ -1005,7 +1005,7 @@
   function getModelInfo(name) {
     const lower = name.toLowerCase();
     if (MODEL_LIBRARY[lower]) return MODEL_LIBRARY[lower];
-    return { desc: "Model from Ollama library", size: "", power: 45, params: "?", context: "?", tags: [] };
+    return { desc: "Model from the library", size: "", power: 45, params: "?", context: "?", tags: [] };
   }
 
   // ---- Vision model detection ----
@@ -1136,7 +1136,7 @@
         <div style="margin-top:12px"><label style="font-size:13px;color:var(--text-secondary)">Popular models</label>
           <div class="rec-list">${popHtml}</div>
         </div>
-        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:var(--accent-blue);font-size:13px">Browse the full library ↗</a></div>
+        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:var(--accent);font-size:13px">Browse the full library ↗</a></div>
       </div>
       <div class="modal-footer"><button class="pill-btn outline" id="cancelPull">Cancel</button><button class="pill-btn primary" id="doPull">Pull</button></div>
     `);
@@ -1182,7 +1182,7 @@
       document.body.appendChild(banner);
     }
     banner.innerHTML = `
-      <span style="font-size:13px;color:#FAFAFA">${OllamaMD.escape(version)} is ready to install</span>
+      <span style="font-size:13px;color:var(--text)">${OllamaMD.escape(version)} is ready to install</span>
       <button class="pill-btn primary" id="installUpdateBtn" style="font-size:12px;padding:5px 12px">Install now</button>
       <button id="dismissUpdateBtn" style="color:#71717A;font-size:18px;padding:2px 6px;background:none;border-radius:4px">&times;</button>
     `;
