@@ -42,7 +42,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 Name: "startup"; Description: "Start &automatically when Windows starts"; GroupDescription: "Additional shortcuts:"
 
 [Files]
-Source: "..\publish\Ollama2.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\Onyx.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
