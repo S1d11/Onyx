@@ -20,6 +20,7 @@ public class GmailConnector : ITool
     private readonly GoogleOAuthService _oauth;
 
     public string Name => "gmail";
+    public bool IsConnected => _oauth.IsConnected;
 
     public GmailConnector(GoogleOAuthService oauth)
     {

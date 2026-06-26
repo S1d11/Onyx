@@ -102,6 +102,21 @@ public class OrchestratorService
             var def = _tools.GetDefinition(toolName);
             if (tool == null || def == null || !def.Enabled) continue;
 
+            // Check if the tool is connected before attempting execution
+            if (!tool.IsConnected)
+            {
+                var connectMsg = toolName switch
+                {
+                    "gmail" => "Gmail is not connected. Tell the user to go to the Connections tab and connect their Google account to use Gmail features.",
+                    "gdrive" => "Google Drive is not connected. Tell the user to go to the Connections tab and connect their Google account to use Google Drive features.",
+                    "github" => "GitHub is not connected. Tell the user to go to the Connections tab and add their GitHub personal access token to use GitHub features.",
+                    _ => $"The {toolName} tool is not connected. Tell the user to go to the Connections tab to connect it."
+                };
+                contextBlocks.Add($"[{toolName} — not connected]\n{connectMsg}");
+                ToolExecuted?.Invoke(this, new ToolResult { ToolName = toolName, Success = false, Output = connectMsg });
+                continue;
+            }
+
             OnStage("executing", $"Running {toolName}...");
             ToolExecuting?.Invoke(this, new ToolExecutionEventArgs { ToolName = toolName, Input = userMessage });
 
@@ -110,9 +125,11 @@ public class OrchestratorService
                 var result = await tool.ExecuteAsync(userMessage, plan.Intent, ct);
                 ToolExecuted?.Invoke(this, result);
 
-                if (result.Success && !string.IsNullOrEmpty(result.Output))
+                if (!string.IsNullOrEmpty(result.Output))
                 {
-                    contextBlocks.Add($"[{toolName} result]\n{result.Output}");
+                    // Include both successful and failed results so the LLM can inform the user
+                    var prefix = result.Success ? $"[{toolName} result]" : $"[{toolName} error]";
+                    contextBlocks.Add($"{prefix}\n{result.Output}");
                 }
             }
             catch (Exception ex)
@@ -123,6 +140,7 @@ public class OrchestratorService
                     Success = false,
                     Output = ex.Message,
                 });
+                contextBlocks.Add($"[{toolName} error]\n{ex.Message}");
             }
         }
 

@@ -27,6 +27,7 @@ public class FilesystemConnector : ITool
     };
 
     public string Name => "filesystem";
+    public bool IsConnected => true;
 
     public FilesystemConnector(ISystemAccess system)
     {

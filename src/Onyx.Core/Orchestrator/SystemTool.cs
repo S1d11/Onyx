@@ -34,6 +34,7 @@ public class SystemTool : ITool
     };
 
     public string Name => "system";
+    public bool IsConnected => true;
 
     /// <summary>Raised when a destructive operation needs user confirmation.</summary>
     public event EventHandler<SystemConfirmationEventArgs>? ConfirmationRequested;

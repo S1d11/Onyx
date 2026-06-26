@@ -14,6 +14,9 @@ public interface ITool
 
     /// <summary>Execute the tool with the given input and return a result.</summary>
     Task<ToolResult> ExecuteAsync(string input, Intent intent, CancellationToken ct = default);
+
+    /// <summary>Whether this tool is connected and ready to use. If false, the orchestrator will tell the user to connect it rather than attempting execution.</summary>
+    bool IsConnected { get; }
 }
 
 /// <summary>

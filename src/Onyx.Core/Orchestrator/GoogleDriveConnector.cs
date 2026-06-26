@@ -21,6 +21,7 @@ public class GoogleDriveConnector : ITool
     private readonly GoogleOAuthService _oauth;
 
     public string Name => "gdrive";
+    public bool IsConnected => _oauth.IsConnected;
 
     public GoogleDriveConnector(GoogleOAuthService oauth)
     {

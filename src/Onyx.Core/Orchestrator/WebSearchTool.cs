@@ -15,6 +15,7 @@ public class WebSearchTool : ITool
     private readonly int _maxResults;
 
     public string Name => "webSearch";
+    public bool IsConnected => true;
 
     public WebSearchTool(WebSearchService search, int maxResults = 5)
     {

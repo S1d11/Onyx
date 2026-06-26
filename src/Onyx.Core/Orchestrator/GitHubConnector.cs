@@ -19,6 +19,7 @@ public class GitHubConnector : ITool
     private readonly Func<string?> _getToken;
 
     public string Name => "github";
+    public bool IsConnected => !string.IsNullOrEmpty(_getToken());
 
     public GitHubConnector(Func<string?> getToken)
     {
