@@ -288,7 +288,10 @@
       <div class="mm-submenu-label">Effort</div>
       <div class="mm-submenu-val">${OllamaMD.escape(effLabel)} <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
     `;
-    effortRow.addEventListener("click", () => showEffortSubmenu(menu));
+    effortRow.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showEffortSubmenu(menu);
+    });
     menu.appendChild(effortRow);
 
     // ---- Actions ----
@@ -311,7 +314,7 @@
     // Header with back arrow
     const header = document.createElement("div"); header.className = "mm-submenu-header";
     header.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg><span>Effort</span>`;
-    header.addEventListener("click", renderModelMenu);
+    header.addEventListener("click", (e) => { e.stopPropagation(); renderModelMenu(); });
     menu.appendChild(header);
 
     // Description
@@ -329,7 +332,8 @@
         <div class="mm-effort-name">${OllamaMD.escape(lvl.label)}${lvl.key === "medium" ? ' <span class="mm-effort-default">Default</span>' : ""}</div>
         <div class="mm-effort-desc">${OllamaMD.escape(lvl.desc)}</div>
       `;
-      row.addEventListener("click", async () => {
+      row.addEventListener("click", async (e) => {
+        e.stopPropagation();
         if (state.config) {
           state.config.effort = lvl.key;
           await call("saveConfig", { config: state.config });
@@ -351,7 +355,8 @@
       </div>
       <div class="toggle ${thinkingOn ? "on" : ""}" id="modelMenuThinking"></div>
     `;
-    thinkingRow.addEventListener("click", async () => {
+    thinkingRow.addEventListener("click", async (e) => {
+      e.stopPropagation();
       if (!state.config) return;
       const t = thinkingRow.querySelector("#modelMenuThinking");
       const on = !t.classList.contains("on");
@@ -360,6 +365,8 @@
       await call("saveConfig", { config: state.config });
     });
     menu.appendChild(thinkingRow);
+
+    positionMenu();
   }
 
   function positionMenu() {
