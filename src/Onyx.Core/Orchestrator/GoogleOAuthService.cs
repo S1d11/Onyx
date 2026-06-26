@@ -88,11 +88,18 @@ public class GoogleOAuthService
     }
 
     /// <summary>
-    /// Start the OAuth flow: open browser for user consent, listen on loopback for callback.
-    /// Returns the refresh token, or null on failure.
+    /// Start the OAuth flow using baked-in credentials: open browser for user consent,
+    /// listen on loopback for callback. Returns the refresh token, or null on failure.
+    /// No user credential entry needed — just click connect and sign in.
     /// </summary>
-    public async Task<string?> StartOAuthFlowAsync(string clientId, string clientSecret, CancellationToken ct = default)
+    public async Task<string?> StartOAuthFlowAsync(CancellationToken ct = default)
     {
+        if (!ConnectorCredentials.GoogleConfigured)
+            return null;
+
+        var clientId = ConnectorCredentials.GoogleClientId;
+        var clientSecret = ConnectorCredentials.GoogleClientSecret;
+
         // Find a free port
         var listener = new HttpListener();
         var port = FindFreePort();
@@ -100,7 +107,7 @@ public class GoogleOAuthService
         listener.Prefixes.Add(redirectUri);
         listener.Start();
 
-        // Save credentials
+        // Save credentials for token refresh later
         _config.Current.GoogleClientId = clientId;
         _config.Current.GoogleClientSecret = clientSecret;
         _config.Save();
@@ -123,8 +130,8 @@ public class GoogleOAuthService
 
         // Respond to browser
         var responseHtml = string.IsNullOrEmpty(error)
-            ? "<html><body><h2>Authorization successful!</h2><p>You can close this window and return to Onyx.</p></body></html>"
-            : $"<html><body><h2>Authorization failed</h2><p>{error}</p></body></html>";
+            ? "<html><body style='font-family:system-ui;text-align:center;padding:60px'><h2>Authorization successful!</h2><p>You can close this window and return to Onyx.</p></body></html>"
+            : $"<html><body style='font-family:system-ui;text-align:center;padding:60px'><h2>Authorization failed</h2><p>{error}</p></body></html>";
         var responseBytes = Encoding.UTF8.GetBytes(responseHtml);
         ctx.Response.ContentType = "text/html";
         ctx.Response.ContentLength64 = responseBytes.Length;

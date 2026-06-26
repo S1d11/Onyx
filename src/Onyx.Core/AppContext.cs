@@ -50,7 +50,8 @@ public sealed class AppContext
             SystemTool = systemTool;
         }
 
-        // Register the GitHub connector
+        // Register the GitHub connector + OAuth service (device flow)
+        GitHubOAuth = new GitHubOAuthService(Config);
         var githubConnector = new GitHubConnector(() => Config.Current.GitHubToken);
         Orchestrator.Tools.Register(GitHubConnector.Definition, githubConnector);
         GitHubConnector = githubConnector;
@@ -74,6 +75,7 @@ public sealed class AppContext
     public OrchestratorService Orchestrator { get; }
     public FilesystemConnector? FilesystemConnector { get; }
     public SystemTool? SystemTool { get; }
+    public GitHubOAuthService GitHubOAuth { get; } = null!;
     public GitHubConnector GitHubConnector { get; } = null!;
     public GoogleOAuthService GoogleOAuth { get; } = null!;
     public GmailConnector GmailConnector { get; } = null!;

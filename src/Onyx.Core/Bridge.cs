@@ -103,8 +103,11 @@ public sealed class Bridge
                 "setLaunchOnStartup" => HandleSetLaunchOnStartup(payload),
                 "browseFolder" => _host.BrowseFolder(),
                 "confirmSystemAction" => HandleConfirmSystemAction(payload),
-                "connectGoogle" => await HandleConnectGoogle(payload),
+                "connectGoogle" => await HandleConnectGoogle(),
                 "disconnectGoogle" => HandleDisconnectGoogle(),
+                "connectGitHub" => await HandleConnectGitHub(),
+                "disconnectGitHub" => HandleDisconnectGitHub(),
+                "getConnectorConfig" => HandleGetConnectorConfig(),
                 _ => null,
             };
             ReplyOk(rpcId, data);
@@ -280,12 +283,12 @@ public sealed class Bridge
         return true;
     }
 
-    private async Task<object> HandleConnectGoogle(JsonElement root)
+    private async Task<object> HandleConnectGoogle()
     {
-        var clientId = root.GetProperty("clientId").GetString()!;
-        var clientSecret = root.GetProperty("clientSecret").GetString()!;
+        if (!ConnectorCredentials.GoogleConfigured)
+            return new { success = false, error = "Google OAuth credentials not configured. See ConnectorCredentials.cs." };
         var oauth = AppContext.Current.GoogleOAuth;
-        var refreshToken = await oauth.StartOAuthFlowAsync(clientId, clientSecret, default);
+        var refreshToken = await oauth.StartOAuthFlowAsync(default);
         return new { success = !string.IsNullOrEmpty(refreshToken), connected = !string.IsNullOrEmpty(refreshToken) };
     }
 
@@ -293,6 +296,30 @@ public sealed class Bridge
     {
         AppContext.Current.GoogleOAuth.Disconnect();
         return true;
+    }
+
+    private async Task<object> HandleConnectGitHub()
+    {
+        if (!ConnectorCredentials.GitHubConfigured)
+            return new { success = false, error = "GitHub OAuth credentials not configured. See ConnectorCredentials.cs." };
+        var oauth = AppContext.Current.GitHubOAuth;
+        var token = await oauth.ConnectAsync();
+        return new { success = !string.IsNullOrEmpty(token), connected = !string.IsNullOrEmpty(token) };
+    }
+
+    private bool HandleDisconnectGitHub()
+    {
+        AppContext.Current.GitHubOAuth.Disconnect();
+        return true;
+    }
+
+    private object HandleGetConnectorConfig()
+    {
+        return new
+        {
+            googleConfigured = ConnectorCredentials.GoogleConfigured,
+            githubConfigured = ConnectorCredentials.GitHubConfigured,
+        };
     }
 
     private bool HandleInstallUpdate(JsonElement root)
