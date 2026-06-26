@@ -131,6 +131,7 @@
     $("#viewChat").classList.toggle("active", name === "chat");
     $("#viewLaunch").classList.toggle("active", name === "launch");
     $("#viewSettings").classList.toggle("active", name === "settings");
+    $("#viewReleaseNotes").classList.toggle("active", name === "releaseNotes");
     if (name === "chat") $("#promptInput").focus();
   }
 
@@ -1010,6 +1011,40 @@
   }
 
   // ---- Settings page ----
+  async function loadReleaseNotes() {
+    const content = $("#releaseNotesContent");
+    const version = $("#releaseNotesVersion");
+    version.textContent = "v" + state.appVersion;
+    content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Loading…</div>';
+    try {
+      const releases = await call("getReleaseNotes");
+      if (!releases || releases.length === 0) {
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">No release notes found.</div>';
+        return;
+      }
+      const html = releases.map((rel, idx) => {
+        const isCurrent = idx === 0;
+        const badgeClass = isCurrent ? "current" : "previous";
+        const badgeText = isCurrent ? "Current" : "Previous";
+        const cardClass = isCurrent ? "current" : "previous";
+        const bodyHtml = OllamaMD.render(rel.body || "_No notes provided._");
+        return `
+          <div class="rn-card ${cardClass}">
+            <div class="rn-card-header">
+              <span class="rn-card-title">${OllamaMD.escape(rel.tag_name)}</span>
+              <span class="rn-card-badge ${badgeClass}">${badgeText}</span>
+            </div>
+            <div class="rn-card-body">${bodyHtml}</div>
+          </div>
+        `;
+      }).join("");
+      const divider = releases.length > 1 ? '<div class="rn-divider">Previous version</div>' : "";
+      content.innerHTML = html + divider;
+    } catch (err) {
+      content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)">Failed to load release notes.<br><span style="font-size:12px">${OllamaMD.escape(err.message)}</span></div>`;
+    }
+  }
+
   function initSettings() {
     const cfg = state.config || {};
     $("#profileName").textContent = cfg.defaultModel || "User";
@@ -1483,6 +1518,8 @@
     $("#settingsBtn").addEventListener("click", () => { showView("settings"); initSettings(); });
     $("#backFromLaunch").addEventListener("click", () => showView("chat"));
     $("#backFromSettings").addEventListener("click", () => showView("chat"));
+    $("#backFromReleaseNotes").addEventListener("click", () => showView("settings"));
+    $("#releaseNotesRow").addEventListener("click", () => { showView("releaseNotes"); loadReleaseNotes(); });
 
     $("#sidebarToggle") && $("#sidebarToggle").addEventListener("click", () => {
       const sb = $("#sidebar");

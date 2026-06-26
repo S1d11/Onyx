@@ -119,6 +119,7 @@ internal sealed class Bridge
                 "downloadUpdate" => await _updater.DownloadUpdateAsync(
                     payload.GetProperty("release").Deserialize<ReleaseInfo>(_json)!),
                 "installUpdate" => HandleInstallUpdate(payload),
+                "getReleaseNotes" => await _updater.GetRecentReleasesAsync(),
                 "browseFolder" => HandleBrowseFolder(),
                 _ => null,
             };

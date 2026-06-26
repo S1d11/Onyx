@@ -15,8 +15,9 @@ namespace Ollama2.Services;
 public class UpdateService
 {
     private const string Owner = "S1d11";
-    private const string Repo = "Ollama-2.0";
+    private const string Repo = "Onyx";
     private const string ApiUrl = $"https://api.github.com/repos/{Owner}/{Repo}/releases/latest";
+    private const string ReleasesApiUrl = $"https://api.github.com/repos/{Owner}/{Repo}/releases?per_page=2";
 
     private static readonly HttpClient Http = new HttpClient();
     static UpdateService()
@@ -162,6 +163,32 @@ public class UpdateService
         return true;
     }
 
+    /// <summary>Fetch the last 2 releases for the release notes page.</summary>
+    public async Task<List<ReleaseNote>> GetRecentReleasesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var json = await Http.GetStringAsync(ReleasesApiUrl, ct);
+            using var doc = JsonDocument.Parse(json);
+            var list = new List<ReleaseNote>();
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                var tag = item.TryGetProperty("tag_name", out var t) ? t.GetString() ?? "" : "";
+                var body = item.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
+                var published = item.TryGetProperty("published_at", out var p) ? p.GetString() ?? "" : "";
+                if (!string.IsNullOrEmpty(tag))
+                {
+                    list.Add(new ReleaseNote(tag, body, published));
+                }
+            }
+            return list;
+        }
+        catch
+        {
+            return new List<ReleaseNote>();
+        }
+    }
+
     private static Version ParseVersion(string tag)
     {
         var clean = tag.TrimStart('v', 'V');
@@ -176,6 +203,12 @@ public record ReleaseInfo(
     [property: System.Text.Json.Serialization.JsonPropertyName("body")] string Body,
     [property: System.Text.Json.Serialization.JsonPropertyName("download_url")] string DownloadUrl,
     [property: System.Text.Json.Serialization.JsonPropertyName("asset_name")] string AssetName
+);
+
+public record ReleaseNote(
+    [property: System.Text.Json.Serialization.JsonPropertyName("tag_name")] string TagName,
+    [property: System.Text.Json.Serialization.JsonPropertyName("body")] string Body,
+    [property: System.Text.Json.Serialization.JsonPropertyName("published_at")] string PublishedAt
 );
 
 public class UpdateStatusEventArgs : EventArgs
