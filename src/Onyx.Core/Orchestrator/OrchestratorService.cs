@@ -172,9 +172,21 @@ public class OrchestratorService
         }
 
         // Safety net: if the LLM said toolUse but didn't specify a target tool,
-        // and the system tool is available, default to it
-        if (intent.Type == IntentType.ToolUse && string.IsNullOrEmpty(intent.TargetTool) && _tools.IsAvailable("system"))
-            tools.AddIfMissing("system");
+        // try to guess based on keywords in the summary
+        if (intent.Type == IntentType.ToolUse && string.IsNullOrEmpty(intent.TargetTool))
+        {
+            var lower = (intent.Summary ?? "").ToLowerInvariant();
+            if ((lower.Contains("email") || lower.Contains("mail") || lower.Contains("inbox")) && _tools.IsAvailable("gmail"))
+                tools.AddIfMissing("gmail");
+            else if ((lower.Contains("drive") || lower.Contains("cloud file")) && _tools.IsAvailable("gdrive"))
+                tools.AddIfMissing("gdrive");
+            else if ((lower.Contains("github") || lower.Contains("repo") || lower.Contains("repository")) && _tools.IsAvailable("github"))
+                tools.AddIfMissing("github");
+            else if ((lower.Contains("file") || lower.Contains("folder") || lower.Contains("directory")) && _tools.IsAvailable("filesystem"))
+                tools.AddIfMissing("filesystem");
+            else if (_tools.IsAvailable("system"))
+                tools.AddIfMissing("system");
+        }
 
         // Only auto-execute if the intent says so.
         // BUT: if the intent is explicitly toolUse with a target tool, always execute

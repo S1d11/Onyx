@@ -116,7 +116,7 @@ public class IntentExtractor
     /// <summary>The system prompt that instructs the LLM to act as an intent classifier.</summary>
     private string BuildSystemPrompt(string toolList)
     {
-        return "You are an intent extraction system for a desktop AI assistant that HAS FULL ACCESS to the user's computer.\n" +
+        return "You are an intent extraction system for a desktop AI assistant that HAS FULL ACCESS to the user's computer and connected services.\n" +
                "Analyze the user's message and determine their intent.\n" +
                "Respond ONLY with a JSON object — no markdown, no explanation, no code fences.\n\n" +
                "Available intent types:\n" +
@@ -127,29 +127,32 @@ public class IntentExtractor
                "- \"creative\": Creative writing, brainstorming, ideation, stories.\n" +
                "- \"summarize\": Summarizing or condensing text.\n" +
                "- \"translate\": Translating between languages.\n" +
-               "- \"toolUse\": The user wants to DO something on their computer — not just talk about it.\n\n" +
+               "- \"toolUse\": The user wants to DO something — on their computer or via a connected service. Not just talk about it.\n\n" +
                "Available tools:\n" + toolList + "\n\n" +
                "CRITICAL RULES FOR CLASSIFICATION:\n" +
-               "- If the user wants to PERFORM an action on their computer (create/read/write/delete files, run commands, check system info, manage processes, modify registry/env, browse directories), classify as \"toolUse\" with targetTool \"system\" and shouldExecuteTools=true.\n" +
-               "- If the user says \"make\", \"create\", \"delete\", \"list\", \"show me\", \"find\", \"run\", \"execute\", \"check\", \"read\", \"write\" followed by a file/directory/program/system reference, this is \"toolUse\" with targetTool \"system\".\n" +
+               "- If the user wants to READ, WRITE, DELETE, or LIST files/folders on their computer, classify as \"toolUse\" with targetTool \"filesystem\".\n" +
+               "- If the user wants to RUN shell commands, manage registry, environment variables, PATH, or processes, classify as \"toolUse\" with targetTool \"system\".\n" +
+               "- If the user mentions EMAIL, GMAIL, INBOX, SEND EMAIL, READ EMAIL, or wants to interact with their mail, classify as \"toolUse\" with targetTool \"gmail\".\n" +
+               "- If the user mentions GOOGLE DRIVE, DRIVE FILES, UPLOAD TO DRIVE, or wants to interact with cloud files, classify as \"toolUse\" with targetTool \"gdrive\".\n" +
+               "- If the user mentions GITHUB, REPO, REPOSITORY, ISSUES, PULL REQUESTS, COMMITS, or CODE SEARCH, classify as \"toolUse\" with targetTool \"github\".\n" +
+               "- If the user says \"make\", \"create\", \"delete\", \"list\", \"show me\", \"find\", \"run\", \"execute\", \"check\", \"read\", \"write\" followed by a file/directory reference, this is \"toolUse\" with targetTool \"filesystem\".\n" +
                "- If the user is asking a QUESTION that could be answered with general knowledge, classify as \"chat\".\n" +
                "- If the user wants code to COPY and run themselves, classify as \"code\".\n" +
-               "- If the user wants YOU to run something on their computer, classify as \"toolUse\" with targetTool \"system\".\n" +
-               "- When in doubt about whether to use the system tool, prefer \"toolUse\" with targetTool \"system\" — the user will see a confirmation dialog for destructive actions.\n\n" +
+               "- When in doubt about whether to use a tool, prefer \"toolUse\" — the user will see a confirmation dialog for destructive actions.\n\n" +
                "Analyze the SEMANTIC MEANING of the message — what the user is trying to accomplish — not just keywords.\n" +
                "Consider the full context of the conversation if provided.\n\n" +
                "Respond with this exact JSON structure:\n" +
-               "{\"intent\":\"toolUse\",\"confidence\":0.95,\"summary\":\"Create empty file named hello in Downloads\",\"entities\":[\"file\",\"hello\",\"Downloads\"],\"language\":\"en\",\"targetTool\":\"system\",\"suggestedTools\":[\"system\"],\"shouldExecuteTools\":true}\n\n" +
+               "{\"intent\":\"toolUse\",\"confidence\":0.95,\"summary\":\"Send email to john@example.com about project update\",\"entities\":[\"email\",\"john@example.com\",\"project update\"],\"language\":\"en\",\"targetTool\":\"gmail\",\"suggestedTools\":[\"gmail\"],\"shouldExecuteTools\":true}\n\n" +
                "Rules:\n" +
                "- \"intent\" must be one of the exact values listed above\n" +
                "- \"confidence\" is 0.0 to 1.0 — how sure you are\n" +
                "- \"summary\" is a short description of the user's goal\n" +
                "- \"entities\" are key topics, technologies, or nouns\n" +
                "- \"language\" is the ISO code of the detected language\n" +
-               "- \"targetTool\" is the tool name if intent is \"toolUse\", otherwise null\n" +
+               "- \"targetTool\" is the tool name if intent is \"toolUse\", otherwise null. Must be one of: filesystem, system, gmail, gdrive, github, webSearch\n" +
                "- \"suggestedTools\" lists tools that would help answer this (can be empty)\n" +
                "- \"shouldExecuteTools\" is true if tools should run automatically before generating the answer\n" +
-               "- For system actions, ALWAYS set shouldExecuteTools to true so the action actually runs\n";
+               "- For toolUse intents, ALWAYS set shouldExecuteTools to true so the action actually runs\n";
     }
 
     /// <summary>Build a description of available tools for the classifier prompt.</summary>
