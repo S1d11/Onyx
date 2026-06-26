@@ -507,7 +507,7 @@
     });
     em.appendChild(thinkingRow);
 
-    positionMenu();
+    requestAnimationFrame(() => requestAnimationFrame(() => positionMenu()));
   }
 
   function hideEffortMenu() {
@@ -523,21 +523,22 @@
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    const menuW = 280;
+    // Use actual rendered width/height after DOM has settled
+    const menuW = Math.min(320, Math.max(280, menu.offsetWidth || 280));
     const effortW = 260;
     const gap = 8;
     const pad = 16;
-    const bothW = menuW + effortW + gap;
 
     // ---- Vertical positioning ----
+    // Measure how much space we actually need
+    const neededH = Math.min(380, menu.scrollHeight || 380);
     const spaceAbove = rect.top - pad;
     const spaceBelow = vh - rect.bottom - pad;
-    const preferredH = 380;
     let menuH, openAbove;
-    if (spaceAbove >= preferredH) {
-      menuH = preferredH; openAbove = true;
-    } else if (spaceBelow >= preferredH) {
-      menuH = preferredH; openAbove = false;
+    if (spaceAbove >= neededH) {
+      menuH = Math.min(neededH, spaceAbove); openAbove = true;
+    } else if (spaceBelow >= neededH) {
+      menuH = Math.min(neededH, spaceBelow); openAbove = false;
     } else if (spaceAbove >= spaceBelow) {
       menuH = Math.max(200, spaceAbove); openAbove = true;
     } else {
@@ -546,41 +547,34 @@
     menu.style.maxHeight = menuH + "px";
     if (em && em.classList.contains("open")) em.style.maxHeight = menuH + "px";
 
-    const menuTop = openAbove ? (rect.top - menuH - gap) : (rect.bottom + gap);
+    // Clamp menuTop so it never goes above the viewport
+    let menuTop = openAbove ? (rect.top - menuH - gap) : (rect.bottom + gap);
+    menuTop = Math.max(pad, Math.min(menuTop, vh - menuH - pad));
     menu.style.top = menuTop + "px";
+    menu.style.bottom = "auto";
     if (em && em.classList.contains("open")) em.style.top = menuTop + "px";
 
     // ---- Horizontal positioning ----
-    // Model menu: try left-aligned, fallback to right-aligned
-    let menuLeft = rect.left;
-    if (menuLeft + menuW > vw - pad) {
-      menuLeft = Math.max(pad, rect.right - menuW);
-    }
+    // Anchor the menu to the button: try right-aligned with the button first,
+    // then left-aligned, then clamp to viewport
+    let menuLeft = rect.right - menuW; // right-align with button
+    if (menuLeft < pad) menuLeft = rect.left; // fallback to left-align
+    if (menuLeft + menuW > vw - pad) menuLeft = vw - menuW - pad;
+    if (menuLeft < pad) menuLeft = pad;
     menu.style.left = menuLeft + "px";
-    menu.style.bottom = "auto";
+    menu.style.right = "auto";
 
     // Effort menu: try right of model menu, fallback to left
     if (em && em.classList.contains("open")) {
       let effortLeft = menuLeft + menuW + gap;
-      let effortRight = menuLeft - effortW - gap;
-      if (effortLeft + effortW <= vw - pad) {
-        em.style.left = effortLeft + "px";
-        em.style.right = "auto";
-      } else if (effortRight >= pad) {
-        em.style.left = effortRight + "px";
-        em.style.right = "auto";
-      } else {
-        // Not enough room either side — shrink and place wherever there's more room
-        const roomRight = vw - menuLeft - menuW - gap - pad;
-        const roomLeft = menuLeft - gap - pad;
-        if (roomRight >= roomLeft) {
-          em.style.left = (menuLeft + menuW + gap) + "px";
-          em.style.maxWidth = Math.max(180, roomRight) + "px";
-        } else {
-          em.style.left = Math.max(pad, menuLeft - gap - effortW) + "px";
-          em.style.maxWidth = Math.max(180, roomLeft) + "px";
-        }
+      if (effortLeft + effortW > vw - pad) {
+        effortLeft = menuLeft - effortW - gap;
       }
+      if (effortLeft < pad) {
+        effortLeft = pad;
+      }
+      em.style.left = effortLeft + "px";
+      em.style.right = "auto";
       em.style.bottom = "auto";
     }
   }
@@ -1494,7 +1488,11 @@
       const menu = $("#modelMenu");
       const wasClosed = !menu.classList.contains("open");
       menu.classList.toggle("open");
-      if (wasClosed) { renderModelMenu(); positionMenu(); }
+      if (wasClosed) {
+        renderModelMenu();
+        // Wait for DOM to settle so we can measure actual dimensions
+        requestAnimationFrame(() => requestAnimationFrame(() => positionMenu()));
+      }
       else { hideEffortMenu(); }
     });
     document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) { closeModelMenu(); } });
