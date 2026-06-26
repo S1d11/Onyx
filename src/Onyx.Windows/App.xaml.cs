@@ -48,7 +48,19 @@ public partial class App : Application
     [DllImport("user32.dll")]
     private static extern bool IsIconic(nint hWnd);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, nint lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetWindowThreadProcessId(nint hWnd, out uint lpdwProcessId);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(nint hWnd);
+
+    private delegate bool EnumWindowsProc(nint hWnd, nint lParam);
+
     private const int SW_RESTORE = 9;
+    private const int SW_SHOW = 5;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -123,15 +135,44 @@ public partial class App : Application
             foreach (var proc in System.Diagnostics.Process.GetProcessesByName("Onyx"))
             {
                 if (proc.Id == currentId) continue;
-                if (proc.MainWindowHandle == nint.Zero) continue;
 
-                if (IsIconic(proc.MainWindowHandle))
-                    ShowWindow(proc.MainWindowHandle, SW_RESTORE);
-                SetForegroundWindow(proc.MainWindowHandle);
+                var hwnd = proc.MainWindowHandle;
+
+                // If MainWindowHandle is zero (window hidden in tray), search all top-level windows
+                if (hwnd == nint.Zero)
+                {
+                    hwnd = FindWindowByProcessId((uint)proc.Id);
+                }
+
+                if (hwnd == nint.Zero) continue;
+
+                // Restore if minimized, show if hidden
+                if (IsIconic(hwnd))
+                    ShowWindow(hwnd, SW_RESTORE);
+                else if (!IsWindowVisible(hwnd))
+                    ShowWindow(hwnd, SW_SHOW);
+
+                SetForegroundWindow(hwnd);
                 break;
             }
         }
         catch { /* best effort */ }
+    }
+
+    private static nint FindWindowByProcessId(uint targetPid)
+    {
+        nint found = nint.Zero;
+        EnumWindows((hWnd, _) =>
+        {
+            GetWindowThreadProcessId(hWnd, out var pid);
+            if (pid == targetPid)
+            {
+                found = hWnd;
+                return false; // stop enumerating
+            }
+            return true;
+        }, nint.Zero);
+        return found;
     }
 
     protected override void OnExit(ExitEventArgs e)
