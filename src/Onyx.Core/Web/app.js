@@ -121,7 +121,8 @@
       updateAttachButtonVisibility();
     }
     renderChatList();
-    if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
+    // On first start, launch into a new chat instead of the last one
+    newChat();
     if (!data.serverReachable) toast("Server not reachable. Is `ollama serve` running?");
   }
 
