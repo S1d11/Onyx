@@ -513,7 +513,7 @@ public sealed class Bridge
                     sendMessages.Add(new ChatMessage { Role = "system", Content = BuildSearchContext(search) });
                     // Fetch the actual page content so the LLM can read and answer directly
                     PostToWeb(new { @event = "orchestratorStage", chatId, stage = "fetching", message = "Reading web pages..." });
-                    var pageContent = await BuildFetchedPagesContextAsync(search, maxPages: 3, charsPerPage: 4000, ct);
+                    var pageContent = await BuildFetchedPagesContextAsync(search, maxPages: 5, charsPerPage: 6000, ct);
                     if (!string.IsNullOrEmpty(pageContent))
                         sendMessages.Add(new ChatMessage { Role = "system", Content = pageContent });
                 }
@@ -539,7 +539,7 @@ public sealed class Bridge
                             PostToWeb(new { @event = "searchResults", chatId, query = search.Query, results = search.Results });
                             // Fetch the actual page content so the LLM can read and answer directly
                             PostToWeb(new { @event = "orchestratorStage", chatId, stage = "fetching", message = "Reading web pages..." });
-                            var pageContent = await BuildFetchedPagesContextAsync(search, maxPages: 3, charsPerPage: 4000, ct);
+                            var pageContent = await BuildFetchedPagesContextAsync(search, maxPages: 5, charsPerPage: 6000, ct);
                             if (!string.IsNullOrEmpty(pageContent))
                                 sendMessages.Add(new ChatMessage { Role = "system", Content = pageContent });
                         }
