@@ -250,7 +250,9 @@ internal sealed class Bridge
         var chatId = root.GetProperty("chatId").GetString()!;
         var model = root.TryGetProperty("model", out var m) ? m.GetString() ?? App.Config.Current.DefaultModel : App.Config.Current.DefaultModel;
         var messages = root.GetProperty("messages").Deserialize<List<ChatMessage>>(_json) ?? new();
-        var webSearch = root.TryGetProperty("webSearch", out var ws) && ws.GetBoolean();
+        var webSearchMode = root.TryGetProperty("webSearchMode", out var wsm) ? wsm.GetString() ?? "auto" : "auto";
+        if (root.TryGetProperty("webSearch", out var wsLegacy) && wsLegacy.GetBoolean())
+            webSearchMode = "on"; // backward compat
         var cfg = App.Config.Current;
 
         var chat = App.Chats.Get(chatId) ?? App.Chats.Create(model);
@@ -262,6 +264,7 @@ internal sealed class Bridge
 
         // Store the latest user message (with images if any) so it persists across reloads
         var lastUserMsg = messages.LastOrDefault(x => x.Role == "user");
+        var lastUser = lastUserMsg?.Content ?? "";
         if (lastUserMsg != null)
         {
             chat.Messages.Add(new ChatStoredMessage
@@ -293,9 +296,9 @@ internal sealed class Bridge
                 sendMessages.Insert(0, new ChatMessage { Role = "system", Content = "Think step-by-step. Break down complex problems, consider multiple angles, and explain your reasoning clearly before giving the final answer." });
 
             // ---- Web search (replicates Ollama's built-in web search UX) ----
-            if (webSearch && cfg.WebSearchEnabled)
+            var shouldSearch = cfg.WebSearchEnabled && (webSearchMode == "on" || (webSearchMode == "auto" && NeedsWebSearch(lastUser)));
+            if (shouldSearch)
             {
-                var lastUser = messages.LastOrDefault(x => x.Role == "user")?.Content ?? "";
                 PostToWeb(new { @event = "searching", chatId, query = lastUser });
                 var search = await App.WebSearch.SearchAsync(lastUser, cfg.MaxSearchResults, ct);
                 sources = search.Results;
@@ -410,6 +413,35 @@ internal sealed class Bridge
             sb.AppendLine();
         }
         return sb.ToString();
+    }
+
+    private static bool NeedsWebSearch(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return false;
+        var q = query.ToLowerInvariant().Trim();
+
+        // Short / trivial queries rarely need search
+        if (q.Length < 20) return false;
+
+        // Common greetings / social phrases — skip only if short and not a real question
+        var greetings = new[] {
+            "hello", "hi", "hey", "how are you", "what's up", "good morning",
+            "good evening", "good night", "thank you", "thanks", "nice to meet"
+        };
+        if (greetings.Any(g => q.StartsWith(g)) && q.Length < 35 && !q.Contains("?")) return false;
+
+        // Strong signals that current / external info is required
+        var signals = new[] {
+            "today", "now", "current", "latest", "recent", "news", "weather", "forecast",
+            "stock", "price", "score", "update", " happening", "this week", "this month",
+            "2024", "2025", "2026", "election", "market", "release date", "upcoming",
+            "live", "breaking", "trending", "who won", "what happened", "did ", "will ",
+            "nba", "nfl", "game", "match", "vs", "bitcoin", "crypto"
+        };
+        if (signals.Any(s => q.Contains(s))) return true;
+
+        // Default: rely on model knowledge
+        return false;
     }
 
     private void ReplyOk(string rpcId, object? data)

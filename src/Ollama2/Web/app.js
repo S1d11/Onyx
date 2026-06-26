@@ -82,7 +82,7 @@
       $("#composerModelLabel").textContent = state.currentModel || "Select";
       updateComposerModel();
       if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); }
-      if (state.config.webSearchEnabled) { $("#webSearchToggle").classList.add("active"); }
+      updateWebSearchToggleUI(state.config.webSearchMode || (state.config.webSearchEnabled ? "auto" : "off"));
       const spn2 = $("#sidebarProfileName"); if (spn2) spn2.textContent = state.config.defaultModel || "User";
       const spa2 = $("#sidebarProfileAvatar"); if (spa2) spa2.textContent = (state.config.defaultModel || "U").charAt(0).toUpperCase();
       updateAttachButtonVisibility();
@@ -237,13 +237,21 @@
 
   function buildSourcesEl(sources, compact) {
     const el = document.createElement("div");
-    el.className = "sources";
-    el.innerHTML = `<div class="sources-title">Sources</div>` + sources.map((s, i) =>
+    el.className = "sources collapsed";
+    const header = document.createElement("div");
+    header.className = "sources-header";
+    header.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Sources (${sources.length})`;
+    const list = document.createElement("div");
+    list.className = "sources-list";
+    list.innerHTML = sources.map((s, i) =>
       `<a class="source-card" href="${OllamaMD.escape(s.url)}" target="_blank" rel="noopener">
         <div class="sc-title">[${i + 1}] ${OllamaMD.escape(s.title)}</div>
         <div class="sc-url">${OllamaMD.escape(s.url)}</div>
         ${compact ? "" : `<div class="sc-snippet">${OllamaMD.escape(s.snippet)}</div>`}
       </a>`).join("");
+    el.appendChild(header);
+    el.appendChild(list);
+    header.addEventListener("click", () => el.classList.toggle("collapsed"));
     return el;
   }
 
@@ -574,7 +582,7 @@
 
     if (!chat) return;
 
-    const webSearch = $("#webSearchToggle").classList.contains("active");
+    const webSearchMode = state.config?.webSearchMode || (state.config?.webSearchEnabled ? "auto" : "off");
     const imageBase64 = images.map(img => dataUrlToBase64(img.dataUrl));
     const imageDataUrls = images.map(img => img.dataUrl);
     chat.messages.push({ role: "user", content: text, images: imageDataUrls });
@@ -603,7 +611,7 @@
         return msg;
       });
 
-    try { await call("sendMessage", { chatId: chat.id, model: state.currentModel, messages: history, webSearch }); }
+    try { await call("sendMessage", { chatId: chat.id, model: state.currentModel, messages: history, webSearchMode }); }
     catch (err) { onChatError({ chatId: chat.id, message: err.message }); }
   }
 
@@ -687,7 +695,7 @@
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
     state.pendingAssistantEl = el; state.pendingAssistantText = ""; state.streaming = true; setStreamingUI(true);
-    call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearch: $("#webSearchToggle").classList.contains("active") });
+    call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearchMode: state.config?.webSearchMode || (state.config?.webSearchEnabled ? "auto" : "off") });
   }
 
   function stopGeneration() { emit("stopGeneration"); }
@@ -695,6 +703,14 @@
   function setStreamingUI(on) {
     $("#sendBtn").classList.toggle("hidden", on);
     $("#stopBtn").classList.toggle("hidden", !on);
+  }
+
+  function updateWebSearchToggleUI(mode) {
+    const btn = $("#webSearchToggle");
+    btn.classList.remove("active", "auto");
+    if (mode === "on") btn.classList.add("active");
+    else if (mode === "auto") btn.classList.add("auto");
+    btn.title = mode === "on" ? "Web search: On" : mode === "auto" ? "Web search: Auto" : "Web search: Off";
   }
 
   function generateTitle(firstUserMessage) {
@@ -937,7 +953,7 @@
       if (!confirm("Reset all settings to defaults?")) return;
       const defaults = {
         serverUrl: "http://localhost:11434", defaultModel: "llama3.2",
-        webSearchEnabled: true, webSearchProvider: "duckduckgo",
+        webSearchEnabled: true, webSearchMode: "auto", webSearchProvider: "duckduckgo",
         webSearchApiKey: "", theme: "dark", sidebarVisible: true, zoom: 1,
         temperature: 0.8, topK: 40, topP: 0.9, numCtx: 4096,
         systemPrompt: "", maxSearchResults: 5, closeBehavior: "tray",
@@ -947,6 +963,7 @@
       state.config = { ...state.config, ...defaults };
       call("saveConfig", { config: state.config });
       initSettings(); // re-render
+      updateWebSearchToggleUI(state.config.webSearchMode);
       toast("Settings reset to defaults");
     };
   }
@@ -1231,8 +1248,11 @@
     window.addEventListener("resize", () => { positionMenu(); });
 
     $("#webSearchToggle").addEventListener("click", () => {
-      const on = $("#webSearchToggle").classList.toggle("active");
-      if (state.config) { state.config.webSearchEnabled = on; call("saveConfig", { config: state.config }); }
+      const modes = ["off", "auto", "on"];
+      const current = state.config?.webSearchMode || (state.config?.webSearchEnabled ? "auto" : "off");
+      const next = modes[(modes.indexOf(current) + 1) % modes.length];
+      if (state.config) { state.config.webSearchMode = next; call("saveConfig", { config: state.config }); }
+      updateWebSearchToggleUI(next);
     });
 
     $("#sendBtn").addEventListener("click", send);

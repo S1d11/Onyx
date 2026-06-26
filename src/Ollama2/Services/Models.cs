@@ -8,6 +8,7 @@ public class AppConfig
     public string ServerUrl { get; set; } = "http://localhost:11434";
     public string DefaultModel { get; set; } = "llama3.2";
     public bool WebSearchEnabled { get; set; } = true;
+    public string WebSearchMode { get; set; } = "auto"; // "off", "auto", "on"
     public string Theme { get; set; } = "dark";
     public bool SidebarVisible { get; set; } = true;
     public double Zoom { get; set; } = 1.0;
