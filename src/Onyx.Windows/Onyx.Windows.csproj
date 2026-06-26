@@ -7,7 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Ollama2</RootNamespace>
     <AssemblyName>Onyx</AssemblyName>
-    <Version>2.24.0.0</Version>
+    <Version>2.24.1.0</Version>
     <Company>Onyx</Company>
     <Product>Onyx</Product>
     <ApplicationManifest>app.manifest</ApplicationManifest>
