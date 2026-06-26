@@ -89,6 +89,7 @@
       case "intent": onIntent(msg); break;
       case "toolExecuting": onToolExecuting(msg); break;
       case "toolExecuted": onToolExecuted(msg); break;
+      case "systemConfirmation": onSystemConfirmation(msg); break;
       case "pullProgress": onPullProgress(msg); break;
       case "pullDone": onPullDone(msg); break;
       case "pullCancelled": onPullCancelled(msg); break;
@@ -916,6 +917,50 @@
       s.innerHTML = `⚠ ${OllamaMD.escape(msg.tool)} failed`;
       setTimeout(() => s.remove(), 2000);
     }
+  }
+
+  // ---- System tool confirmation dialog ----
+  function onSystemConfirmation(msg) {
+    if (msg.chatId !== state.currentId) return;
+
+    // Remove any existing confirmation dialog
+    const existing = $("#messages").querySelector(".system-confirm");
+    if (existing) existing.remove();
+
+    const dialog = document.createElement("div");
+    dialog.className = "system-confirm";
+    dialog.innerHTML = `
+      <div class="system-confirm-card">
+        <div class="system-confirm-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>System Action Confirmation</span>
+        </div>
+        <div class="system-confirm-body">
+          <div class="system-confirm-action">${OllamaMD.escape(msg.action)}</div>
+          <div class="system-confirm-desc">${OllamaMD.escape(msg.description)}</div>
+          ${msg.params && Object.keys(msg.params).length > 0 ? `
+            <div class="system-confirm-params">
+              ${Object.entries(msg.params).map(([k, v]) => `<div><span class="param-key">${OllamaMD.escape(k)}:</span> <span class="param-val">${OllamaMD.escape(String(v))}</span></div>`).join("")}
+            </div>
+          ` : ""}
+        </div>
+        <div class="system-confirm-buttons">
+          <button class="confirm-deny" data-confirm-id="${msg.confirmId}">Deny</button>
+          <button class="confirm-approve" data-confirm-id="${msg.confirmId}">Approve</button>
+        </div>
+      </div>
+    `;
+    $("#messages").appendChild(dialog);
+    $("#messages").scrollTop = $("#messages").scrollHeight;
+
+    dialog.querySelector(".confirm-approve").addEventListener("click", () => {
+      call("confirmSystemAction", { confirmId: msg.confirmId, approved: true });
+      dialog.remove();
+    });
+    dialog.querySelector(".confirm-deny").addEventListener("click", () => {
+      call("confirmSystemAction", { confirmId: msg.confirmId, approved: false });
+      dialog.remove();
+    });
   }
 
   function onSearchResults(msg) {

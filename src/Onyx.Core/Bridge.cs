@@ -22,6 +22,7 @@ public sealed class Bridge
     private readonly IBridgeHost _host;
     private readonly JsonSerializerOptions _json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private readonly Dictionary<string, CancellationTokenSource> _chatCtsByChatId = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _confirmationResults = new();
     private CancellationTokenSource? _pullCts;
     private readonly UpdateService _updater = new();
 
@@ -101,6 +102,7 @@ public sealed class Bridge
                 "getReleaseNotes" => await _updater.GetRecentReleasesAsync(),
                 "setLaunchOnStartup" => HandleSetLaunchOnStartup(payload),
                 "browseFolder" => _host.BrowseFolder(),
+                "confirmSystemAction" => HandleConfirmSystemAction(payload),
                 _ => null,
             };
             ReplyOk(rpcId, data);
@@ -253,6 +255,14 @@ public sealed class Bridge
         return true;
     }
 
+    private bool HandleConfirmSystemAction(JsonElement root)
+    {
+        var confirmId = root.GetProperty("confirmId").GetString()!;
+        var approved = root.GetProperty("approved").GetBoolean();
+        _confirmationResults[confirmId] = approved;
+        return true;
+    }
+
     private bool HandleInstallUpdate(JsonElement root)
     {
         var path = root.GetProperty("path").GetString()!;
@@ -342,6 +352,41 @@ public sealed class Bridge
             EventHandler<ToolResult>? toolResultHandler = (_, r) =>
                 PostToWeb(new { @event = "toolExecuted", chatId, tool = r.ToolName, success = r.Success });
 
+            // System tool confirmation handler — posts a confirmation dialog to the UI
+            // and waits for the user to approve/deny
+            EventHandler<SystemConfirmationEventArgs>? confirmHandler = null;
+            var systemTool = AppContext.Current.SystemTool;
+            if (systemTool != null)
+            {
+                confirmHandler = (_, e) =>
+                {
+                    // Post confirmation request to UI
+                    var confirmId = Guid.NewGuid().ToString("N");
+                    PostToWeb(new
+                    {
+                        @event = "systemConfirmation",
+                        chatId,
+                        confirmId,
+                        action = e.Action,
+                        description = e.Description,
+                        @params = e.Params,
+                    });
+                    // Wait for user response (with timeout)
+                    var deadline = DateTime.UtcNow.AddSeconds(60);
+                    while (DateTime.UtcNow < deadline && !e.Approved)
+                    {
+                        if (_confirmationResults.TryRemove(confirmId, out var approved))
+                        {
+                            e.Approved = approved;
+                            break;
+                        }
+                        Thread.Sleep(200);
+                        if (ct.IsCancellationRequested) break;
+                    }
+                };
+                systemTool.ConfirmationRequested += confirmHandler;
+            }
+
             orchestrator.StageChanged += stageHandler;
             orchestrator.IntentExtracted += intentHandler;
             orchestrator.ToolExecuting += toolExecHandler;
@@ -399,6 +444,8 @@ public sealed class Bridge
                 orchestrator.IntentExtracted -= intentHandler;
                 orchestrator.ToolExecuting -= toolExecHandler;
                 orchestrator.ToolExecuted -= toolResultHandler;
+                if (systemTool != null && confirmHandler != null)
+                    systemTool.ConfirmationRequested -= confirmHandler;
             }
 
             var req = new ChatRequest

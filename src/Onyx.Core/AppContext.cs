@@ -14,13 +14,13 @@ public sealed class AppContext
 
     public static bool IsInitialized => _current != null;
 
-    public static void Initialize(string dataDir)
+    public static void Initialize(string dataDir, ISystemAccess? systemAccess = null)
     {
         if (_current != null) return;
-        _current = new AppContext(dataDir);
+        _current = new AppContext(dataDir, systemAccess);
     }
 
-    private AppContext(string dataDir)
+    private AppContext(string dataDir, ISystemAccess? systemAccess = null)
     {
         DataDir = dataDir;
         Directory.CreateDirectory(DataDir);
@@ -36,6 +36,14 @@ public sealed class AppContext
         // Initialize the orchestrator with the built-in web search tool
         Orchestrator = new OrchestratorService(Ollama, () => Config.Current.DefaultModel);
         Orchestrator.Tools.Register(WebSearchTool.Definition, new WebSearchTool(WebSearch, Config.Current.MaxSearchResults));
+
+        // Register the system tool if platform-specific system access is available
+        if (systemAccess != null)
+        {
+            var systemTool = new SystemTool(Ollama, () => Config.Current.DefaultModel, systemAccess);
+            Orchestrator.Tools.Register(SystemTool.Definition, systemTool);
+            SystemTool = systemTool;
+        }
     }
 
     public string DataDir { get; }
@@ -44,6 +52,7 @@ public sealed class AppContext
     public WebSearchService WebSearch { get; }
     public ChatStore Chats { get; }
     public OrchestratorService Orchestrator { get; }
+    public SystemTool? SystemTool { get; }
 
     public void SaveAll()
     {

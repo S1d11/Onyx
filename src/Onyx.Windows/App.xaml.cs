@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Ollama2.Services;
+using Onyx.Windows;
 
 namespace Ollama2;
 
@@ -77,8 +78,8 @@ public partial class App : Application
 
         base.OnStartup(e);
 
-        // Initialize shared core context
-        AppContext.Initialize(DataDir);
+        // Initialize shared core context with Windows system access
+        AppContext.Initialize(DataDir, new WindowsSystemAccess());
 
         // Register Windows-specific implementations
         HardwareDetector.Instance = new WindowsHardwareDetector();

@@ -12,8 +12,8 @@ public partial class App : Application
     {
         InitializeComponent();
 
-        // Initialize shared core context
-        AppContext.Initialize(DataDir);
+        // Initialize shared core context with macOS system access
+        AppContext.Initialize(DataDir, new MacSystemAccess());
 
         // Register Mac-specific implementations
         HardwareDetector.Instance = new MacHardwareDetector();
