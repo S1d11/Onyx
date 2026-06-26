@@ -15,6 +15,9 @@
     view: "chat",
     appVersion: "",
     hardware: null,
+    modelVisionCache: {},   // modelName -> bool (supports vision)
+    modelVisionLoading: {}, // modelName -> bool (currently checking)
+    pendingImages: [],      // [{ dataUrl, name }] — base64 data URLs to send
   };
 
   let _rpcCounter = 0;
@@ -82,6 +85,7 @@
       if (state.config.webSearchEnabled) { $("#webSearchToggle").classList.add("active"); }
       const spn2 = $("#sidebarProfileName"); if (spn2) spn2.textContent = state.config.defaultModel || "User";
       const spa2 = $("#sidebarProfileAvatar"); if (spa2) spa2.textContent = (state.config.defaultModel || "U").charAt(0).toUpperCase();
+      updateAttachButtonVisibility();
     }
     renderChatList();
     if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
@@ -203,16 +207,21 @@
   function renderMessages(c) {
     const m = $("#messages");
     m.innerHTML = "";
-    c.messages.forEach(msg => appendMessageEl(msg.role, msg.content, { sources: msg.sources, error: msg.error, evalCount: msg.evalCount, totalMs: msg.totalMs }));
+    c.messages.forEach(msg => appendMessageEl(msg.role, msg.content, { sources: msg.sources, error: msg.error, evalCount: msg.evalCount, totalMs: msg.totalMs, images: msg.images }));
   }
 
   function appendMessageEl(role, content, opts = {}) {
     const m = $("#messages");
     const wrap = document.createElement("div");
     wrap.className = "msg " + role;
+    // Build images HTML for user messages with images
+    let imagesHtml = "";
+    if (role === "user" && opts.images && opts.images.length) {
+      imagesHtml = `<div class="msg-images">${opts.images.map(url => `<img src="${url}" alt="attachment">`).join("")}</div>`;
+    }
     const bodyHtml = opts.error
       ? `<div class="msg-error">${OllamaMD.escape(opts.error)}</div>`
-      : (role === "user" ? OllamaMD.escape(content).replace(/\n/g, "<br>") : OllamaMD.render(content));
+      : (role === "user" ? imagesHtml + OllamaMD.escape(content).replace(/\n/g, "<br>") : OllamaMD.render(content));
     wrap.innerHTML = `<div class="msg-role">${role}</div><div class="msg-body">${bodyHtml}</div>`;
     if (opts.sources && opts.sources.length) wrap.querySelector(".msg-body").appendChild(buildSourcesEl(opts.sources, true));
     if (role === "assistant" && !opts.error) appendMsgActions(wrap, content, opts);
@@ -463,15 +472,86 @@
     if (state.config) { state.config.defaultModel = name; call("saveConfig", { config: state.config }); }
     if (state.currentId) { const c = state.chats.find(x => x.id === state.currentId); if (c) c.model = name; }
     renderModelMenu();
+    updateAttachButtonVisibility();
+    // Clear pending images if switching to a non-vision model
+    checkModelVision(name).then(supports => {
+      if (!supports && state.pendingImages.length) {
+        state.pendingImages = [];
+        renderPendingImages();
+      }
+    });
   }
 
   function closeModelMenu() { $("#modelMenu")?.classList.remove("open"); hideEffortMenu(); }
+
+  // ---- File / image handling ----
+  const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+  async function handleFiles(fileList) {
+    // Only allow images, and only if the current model supports vision
+    const supportsVision = await checkModelVision(state.currentModel);
+    if (!supportsVision) {
+      toast("This model doesn't support images. Select a vision model (e.g. llava).");
+      return;
+    }
+    const files = Array.from(fileList).filter(f => f.type.startsWith("image/"));
+    if (!files.length) {
+      toast("Only image files are supported.");
+      return;
+    }
+    for (const f of files) {
+      if (f.size > MAX_IMAGE_SIZE) {
+        toast(`"${f.name}" is too large (max 20 MB).`);
+        continue;
+      }
+      const dataUrl = await readFileAsDataURL(f);
+      state.pendingImages.push({ dataUrl, name: f.name });
+    }
+    renderPendingImages();
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  function renderPendingImages() {
+    const container = $("#pendingImages");
+    if (!container) return;
+    container.innerHTML = "";
+    state.pendingImages.forEach((img, idx) => {
+      const el = document.createElement("div");
+      el.className = "pending-img";
+      el.innerHTML = `<img src="${img.dataUrl}" alt="${OllamaMD.escape(img.name)}"><button class="pending-img-remove" title="Remove">&times;</button>`;
+      el.querySelector(".pending-img-remove").addEventListener("click", () => {
+        state.pendingImages.splice(idx, 1);
+        renderPendingImages();
+      });
+      container.appendChild(el);
+    });
+  }
+
+  function clearPendingImages() {
+    state.pendingImages = [];
+    renderPendingImages();
+  }
+
+  // Extract base64 (without data: prefix) from a data URL
+  function dataUrlToBase64(dataUrl) {
+    const idx = dataUrl.indexOf(",");
+    return idx >= 0 ? dataUrl.substring(idx + 1) : dataUrl;
+  }
 
   // ---- send / stream ----
   async function send() {
     const input = $("#promptInput");
     const text = input.value.trim();
-    if (!text || state.streaming) return;
+    const images = [...state.pendingImages];
+    if ((!text && !images.length) || state.streaming) return;
     if (!state.currentModel) { toast("Select a model first"); return; }
 
     let chat = state.chats.find(c => c.id === state.currentId);
@@ -490,11 +570,14 @@
     if (!chat) return;
 
     const webSearch = $("#webSearchToggle").classList.contains("active");
-    chat.messages.push({ role: "user", content: text });
-    appendMessageEl("user", text);
+    const imageBase64 = images.map(img => dataUrlToBase64(img.dataUrl));
+    const imageDataUrls = images.map(img => img.dataUrl);
+    chat.messages.push({ role: "user", content: text, images: imageDataUrls });
+    appendMessageEl("user", text, { images: imageDataUrls });
     $("#emptyState").classList.add("hidden");
     $("#viewChat").classList.remove("chat-empty");
     input.value = ""; autoGrow();
+    clearPendingImages();
 
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
@@ -503,9 +586,17 @@
     state.streaming = true;
     setStreamingUI(true);
 
+    // Build history — include images on the latest user message
     const history = chat.messages
       .filter(m => m.role === "user" || (m.role === "assistant" && m.content))
-      .map(m => ({ role: m.role, content: m.content }));
+      .map((m, i) => {
+        const msg = { role: m.role, content: m.content };
+        // Attach images to the last user message
+        if (m.role === "user" && m.images && m.images.length && i === chat.messages.length - 1) {
+          msg.images = m.images.map(dataUrl => dataUrlToBase64(dataUrl));
+        }
+        return msg;
+      });
 
     try { await call("sendMessage", { chatId: chat.id, model: state.currentModel, messages: history, webSearch }); }
     catch (err) { onChatError({ chatId: chat.id, message: err.message }); }
@@ -581,7 +672,13 @@
     if (!c) return;
     while (c.messages.length && c.messages[c.messages.length - 1].role === "assistant") c.messages.pop();
     renderMessages(c);
-    const history = c.messages.map(m => ({ role: m.role, content: m.content }));
+    const history = c.messages.map(m => {
+      const msg = { role: m.role, content: m.content };
+      if (m.role === "user" && m.images && m.images.length) {
+        msg.images = m.images.map(dataUrl => dataUrlToBase64(dataUrl));
+      }
+      return msg;
+    });
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
     state.pendingAssistantEl = el; state.pendingAssistantText = ""; state.streaming = true; setStreamingUI(true);
@@ -906,6 +1003,67 @@
     return { desc: "Model from Ollama library", size: "", power: 45, params: "?", context: "?", tags: [] };
   }
 
+  // ---- Vision model detection ----
+  // Known vision model name patterns (fast check without API call)
+  const VISION_NAME_PATTERNS = [
+    "llava", "bakllava", "moondream", "llama3.2-vision", "llama3.2:11b-vision",
+    "llama3.2:90b-vision", "minicpm-v", "qwen2.5-vl", "qwen2-vl", "internvl",
+    "granite3.2-vision", "gemma3", "pixtral", "mistral-small3.1",
+  ];
+
+  function isVisionModelByName(name) {
+    const lower = (name || "").toLowerCase();
+    return VISION_NAME_PATTERNS.some(p => lower.includes(p));
+  }
+
+  async function checkModelVision(name) {
+    if (!name) return false;
+    if (state.modelVisionCache[name] !== undefined) return state.modelVisionCache[name];
+    if (state.modelVisionLoading[name]) return false;
+    state.modelVisionLoading[name] = true;
+    try {
+      // Fast path: check by name first
+      if (isVisionModelByName(name)) {
+        state.modelVisionCache[name] = true;
+        return true;
+      }
+      // Query /api/show for capabilities
+      const info = await call("showModel", { name });
+      let supportsVision = false;
+      // Check capabilities array (newer Ollama)
+      if (info && info.capabilities) {
+        const caps = Array.isArray(info.capabilities) ? info.capabilities : [];
+        supportsVision = caps.some(c => String(c).toLowerCase() === "vision");
+      }
+      // Check projector_info presence (indicates vision projector)
+      if (!supportsVision && info && info.projector_info) {
+        supportsVision = true;
+      }
+      // Check model_info families for "clip"
+      if (!supportsVision && info && info.model_info) {
+        const mi = info.model_info;
+        const fam = mi["general.family"] || mi["general.architecture"] || "";
+        if (String(fam).toLowerCase().includes("clip")) supportsVision = true;
+      }
+      state.modelVisionCache[name] = supportsVision;
+      return supportsVision;
+    } catch {
+      // If show fails, fall back to name-based check
+      const fallback = isVisionModelByName(name);
+      state.modelVisionCache[name] = fallback;
+      return fallback;
+    } finally {
+      state.modelVisionLoading[name] = false;
+    }
+  }
+
+  async function updateAttachButtonVisibility() {
+    const btn = $("#attachBtn");
+    if (!btn) return;
+    const supports = await checkModelVision(state.currentModel);
+    btn.style.display = supports ? "" : "none";
+  }
+
   function getRecommendedModels() {
     const hw = state.hardware;
     const ram = hw?.ramGb || 8;
@@ -1079,6 +1237,50 @@
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
     });
+
+    // ---- File attach ----
+    $("#attachBtn").addEventListener("click", () => $("#fileInput").click());
+    $("#fileInput").addEventListener("change", (e) => {
+      handleFiles(e.target.files);
+      e.target.value = ""; // reset so same file can be re-selected
+    });
+
+    // ---- Drag and drop on composer ----
+    const composerBox = $(".composer-box");
+    if (composerBox) {
+      ["dragenter", "dragover"].forEach(ev => {
+        composerBox.addEventListener(ev, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          composerBox.classList.add("drag-over");
+        });
+      });
+      ["dragleave", "drop"].forEach(ev => {
+        composerBox.addEventListener(ev, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (ev === "dragleave" && e.target !== composerBox) return;
+          composerBox.classList.remove("drag-over");
+        });
+      });
+      composerBox.addEventListener("drop", (e) => {
+        const files = e.dataTransfer?.files;
+        if (files && files.length) handleFiles(files);
+      });
+      // Also support paste of images
+      input.addEventListener("paste", (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        const imageFiles = [];
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            const f = item.getAsFile();
+            if (f) imageFiles.push(f);
+          }
+        }
+        if (imageFiles.length) { e.preventDefault(); handleFiles(imageFiles); }
+      });
+    }
   }
 
   function autoGrow() {

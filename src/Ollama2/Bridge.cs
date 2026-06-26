@@ -260,6 +260,18 @@ internal sealed class Bridge
         if ((chat.Title == "New Chat" || string.IsNullOrEmpty(chat.Title)) && messages.FirstOrDefault(x => x.Role == "user")?.Content is { Length: > 0 } firstUser)
             chat.Title = firstUser.Length > 48 ? firstUser.Substring(0, 48) + "…" : firstUser;
 
+        // Store the latest user message (with images if any) so it persists across reloads
+        var lastUserMsg = messages.LastOrDefault(x => x.Role == "user");
+        if (lastUserMsg != null)
+        {
+            chat.Messages.Add(new ChatStoredMessage
+            {
+                Role = "user",
+                Content = lastUserMsg.Content,
+                Images = lastUserMsg.Images,
+            });
+        }
+
         try { _chatCts?.Cancel(); _chatCts?.Dispose(); } catch { }
         _chatCts = new CancellationTokenSource();
         var ct = _chatCts.Token;

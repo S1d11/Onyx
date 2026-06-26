@@ -47,7 +47,7 @@ public class ChatMessage
 {
     [JsonPropertyName("role")] public string Role { get; set; } = "user";
     [JsonPropertyName("content")] public string Content { get; set; } = "";
-    [JsonPropertyName("images")] public List<string>? Images { get; set; }
+    [JsonPropertyName("images")][JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public List<string>? Images { get; set; }
 }
 
 public class ChatRequest
@@ -86,6 +86,7 @@ public class ChatStoredMessage
 {
     public string Role { get; set; } = "user";
     public string Content { get; set; } = "";
+    public List<string>? Images { get; set; }
     public List<SearchSource>? Sources { get; set; }
     public string? Error { get; set; }
     public long? EvalCount { get; set; }
