@@ -416,9 +416,21 @@ public sealed class Bridge
             // Build the message list we'll send to the model.
             var sendMessages = new List<ChatMessage>(messages);
 
-            // Optional system prompt from settings.
+            // Default system prompt: tell the LLM it's a desktop assistant with tools.
+            // This is ALWAYS injected (before any user-configured prompt) so the LLM
+            // knows it can actually DO things, not just give instructions.
+            var toolSummary = BuildToolSummary();
+            sendMessages.Insert(0, new ChatMessage { Role = "system", Content =
+                $"You are Onyx, a desktop AI assistant running on the user's computer. You have direct access to the user's filesystem, system commands, and connected services.\n" +
+                $"When the user asks you to DO something (create a file, list a folder, run a command, send an email, search GitHub), you should DO it — not give instructions on how to do it manually.\n" +
+                $"Available tools: {toolSummary}\n" +
+                $"When a tool has already been executed, its result will appear as a system message labeled [tool result]. Summarize what the tool did for the user. If the tool failed, explain the error and suggest a fix.\n" +
+                $"If a tool is not connected, tell the user to go to the Connections tab to connect it."
+            });
+
+            // Optional system prompt from settings (user can override/augment).
             if (!string.IsNullOrWhiteSpace(cfg.SystemPrompt))
-                sendMessages.Insert(0, new ChatMessage { Role = "system", Content = cfg.SystemPrompt });
+                sendMessages.Insert(1, new ChatMessage { Role = "system", Content = cfg.SystemPrompt });
 
             // Thinking mode: add a reasoning system prompt.
             if (cfg.ThinkingEnabled)
@@ -621,6 +633,21 @@ public sealed class Bridge
             }
         }
         return true;
+    }
+
+    /// <summary>Build a short summary of available tools for the system prompt.</summary>
+    private static string BuildToolSummary()
+    {
+        var tools = AppContext.Current.Orchestrator.Tools;
+        var sb = new StringBuilder();
+        foreach (var def in tools.Definitions)
+        {
+            if (!def.Enabled) continue;
+            var tool = tools.GetTool(def.Name);
+            var connected = tool?.IsConnected ?? false;
+            sb.Append($"{def.Name} ({(connected ? "connected" : "not connected")}): {def.Description}; ");
+        }
+        return sb.ToString().TrimEnd(' ', ';');
     }
 
     private static double EffortToTemperature(string effort)

@@ -86,9 +86,13 @@ public class FilesystemConnector : ITool
             var path = ExtractPath(input, home, downloads, desktop, documents);
             return new FsAction { Action = "delete_file", Path = path };
         }
-        if (lower.Contains("create folder") || lower.Contains("make folder") || lower.Contains("new folder") || lower.Contains("create dir") || lower.Contains("make dir"))
+        if (lower.Contains("create folder") || lower.Contains("make folder") || lower.Contains("new folder") || lower.Contains("create dir") || lower.Contains("make dir") || lower.Contains("create a folder") || lower.Contains("make a folder") || lower.Contains("create a directory"))
         {
             var path = ExtractPath(input, home, downloads, desktop, documents);
+            // Append the folder name if the user said "called X" or "named X"
+            var folderName = ExtractName(input);
+            if (!string.IsNullOrEmpty(folderName))
+                path = Path.Combine(path, folderName);
             return new FsAction { Action = "create_dir", Path = path };
         }
         if (lower.Contains("file info") || lower.Contains("file details") || lower.Contains("size of") || lower.Contains("when was"))
@@ -109,6 +113,32 @@ public class FilesystemConnector : ITool
             return new FsAction { Action = "file_info", Path = fallbackPath };
         }
 
+        return null;
+    }
+
+    private static string? ExtractName(string input)
+    {
+        // Look for "called X", "named X", "called "X"", etc.
+        var patterns = new[] { "called ", "named ", "called \"", "named \"", "called '", "named '" };
+        foreach (var pat in patterns)
+        {
+            var idx = input.IndexOf(pat, StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+            {
+                var after = input[(idx + pat.Length)..].Trim();
+                // If quoted, take everything inside the quotes
+                if (after.StartsWith('"') || after.StartsWith('\''))
+                {
+                    var quote = after[0];
+                    var endQ = after.IndexOf(quote, 1);
+                    if (endQ > 0) return after[1..endQ];
+                }
+                // Otherwise take the first word/phrase (up to space, period, or end)
+                var endIdx = after.IndexOfAny(new[] { ' ', '.', ',', ';', '!', '?' });
+                if (endIdx > 0) return after[..endIdx];
+                return after;
+            }
+        }
         return null;
     }
 

@@ -234,6 +234,10 @@ public class OrchestratorService
         IntentType.Summarize => "You are a summarization expert. Capture the key points concisely. Preserve the essential meaning while reducing length.",
         IntentType.Translate => "You are a professional translator. Translate accurately while preserving tone, context, and cultural nuances.",
         IntentType.WebSearch => "You have access to web search results. Use them to provide accurate, up-to-date information. Cite sources inline as [1], [2], etc.",
+        IntentType.ToolUse => "You are a desktop AI assistant. The user asked you to perform an action, and a tool has been executed on your behalf. " +
+            "The tool result is provided as a system message. Tell the user what was done concisely. " +
+            "If the tool succeeded, confirm the action was completed. If it failed, explain the error and suggest a fix. " +
+            "Do NOT give the user instructions on how to do it themselves — you already did it for them.",
         _ => "",
     };
 

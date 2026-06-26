@@ -8,7 +8,7 @@
 param(
   [switch]$MakeInstaller,
   [string]$Configuration = "Release",
-  [string]$AppVersion = "2.23.6"
+  [string]$AppVersion = "2.24.0"
 )
 
 $ErrorActionPreference = "Stop"
