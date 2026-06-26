@@ -1,4 +1,3 @@
-// Ollama 2.0 UI controller
 (function () {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -12,6 +11,7 @@
     streaming: false,
     pendingAssistantEl: null,
     pendingAssistantText: "",
+    view: "chat",
   };
 
   let rpcId = 0;
@@ -40,7 +40,7 @@
   function handleEvent(msg) {
     switch (msg.event) {
       case "state": onInitialState(msg); break;
-      case "models": state.models = msg.models; renderModelMenu(); break;
+      case "models": state.models = msg.models; renderModelMenu(); updateComposerModel(); break;
       case "chatChunk": onChatChunk(msg); break;
       case "chatDone": onChatDone(msg); break;
       case "chatError": onChatError(msg); break;
@@ -57,9 +57,10 @@
   async function init() {
     bindUI();
     bindKeyboard();
+    initLaunchList();
     const data = await call("getInitialState");
     onInitialState(data);
-    call("listModels").then(m => { state.models = m; renderModelMenu(); }).catch(() => {});
+    call("listModels").then(m => { state.models = m; renderModelMenu(); updateComposerModel(); }).catch(() => {});
   }
 
   function onInitialState(data) {
@@ -67,13 +68,22 @@
     state.chats = data.chats || [];
     if (state.config) {
       state.currentModel = state.config.defaultModel;
-      $("#webSearchCheckbox").checked = !!state.config.webSearchEnabled;
-      updateWebSearchToggle();
+      $("#modelLabel").textContent = state.currentModel || "Select a model";
+      updateComposerModel();
       if (!state.config.sidebarVisible) $("#sidebar").classList.add("collapsed");
     }
     renderChatList();
     if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
     if (!data.serverReachable) toast("Ollama server not reachable. Is `ollama serve` running?");
+  }
+
+  // ---- View routing ----
+  function showView(name) {
+    state.view = name;
+    $("#viewChat").classList.toggle("hidden", name !== "chat");
+    $("#viewLaunch").classList.toggle("hidden", name !== "launch");
+    $("#viewSettings").classList.toggle("hidden", name !== "settings");
+    if (name === "chat") $("#promptInput").focus();
   }
 
   // ---- chat list ----
@@ -99,6 +109,7 @@
     if (!c) return;
     state.currentModel = c.model || state.currentModel;
     $("#modelLabel").textContent = state.currentModel || "Select a model";
+    updateComposerModel();
     renderChatList();
     renderMessages(c);
     $("#emptyState").classList.toggle("hidden", c.messages.length > 0);
@@ -172,8 +183,12 @@
     pull.addEventListener("click", () => { closeModelMenu(); showPullModal(); });
     menu.appendChild(pull);
     const manage = document.createElement("div"); manage.className = "mm-action"; manage.textContent = "Manage models";
-    manage.addEventListener("click", () => { closeModelMenu(); showModelsModal(); });
+    manage.addEventListener("click", () => { closeModelMenu(); showManageModelsModal(); });
     menu.appendChild(manage);
+  }
+
+  function updateComposerModel() {
+    $("#composerModelLabel").textContent = state.currentModel || "Select";
   }
 
   function formatSize(b) {
@@ -185,6 +200,7 @@
   function selectModel(name) {
     state.currentModel = name;
     $("#modelLabel").textContent = name;
+    updateComposerModel();
     if (state.currentId) { const c = state.chats.find(x => x.id === state.currentId); if (c) c.model = name; }
     renderModelMenu();
   }
@@ -205,7 +221,7 @@
       state.currentId = chat.id;
     }
 
-    const webSearch = $("#webSearchCheckbox").checked;
+    const webSearch = $("#webSearchToggle").classList.contains("active");
     chat.messages.push({ role: "user", content: text });
     appendMessageEl("user", text);
     $("#emptyState").classList.add("hidden");
@@ -222,11 +238,8 @@
       .filter(m => m.role === "user" || (m.role === "assistant" && m.content))
       .map(m => ({ role: m.role, content: m.content }));
 
-    try {
-      await call("sendMessage", { chatId: chat.id, model: state.currentModel, messages: history, webSearch });
-    } catch (err) {
-      onChatError({ chatId: chat.id, message: err.message });
-    }
+    try { await call("sendMessage", { chatId: chat.id, model: state.currentModel, messages: history, webSearch }); }
+    catch (err) { onChatError({ chatId: chat.id, message: err.message }); }
   }
 
   function onChatChunk(msg) {
@@ -288,7 +301,7 @@
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
     state.pendingAssistantEl = el; state.pendingAssistantText = ""; state.streaming = true; setStreamingUI(true);
-    call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearch: $("#webSearchCheckbox").checked });
+    call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearch: $("#webSearchToggle").classList.contains("active") });
   }
 
   function stopGeneration() { emit("stopGeneration"); }
@@ -314,103 +327,78 @@
     renderChatList();
   }
 
-  // ---- modals ----
-  function modal(html) {
-    const root = $("#modalRoot");
-    root.innerHTML = `<div class="modal">${html}</div>`;
-    root.classList.remove("hidden");
-    root.onclick = (e) => { if (e.target === root) closeModal(); };
-  }
-  function closeModal() { $("#modalRoot").classList.add("hidden"); $("#modalRoot").innerHTML = ""; }
+  // ---- Launch page ----
+  const LAUNCH_APPS = [
+    { name: "Claude Code", desc: "Anthropic's coding tool with autogrants.", cmd: "claude", icon: "🟠" },
+    { name: "Codex App", desc: "An AI agent you can delegate real work to, by OpenAI.", cmd: "codex-app", icon: "🔵" },
+    { name: "Hermes Agent", desc: "Self-improving AI agent built by Nous Research.", cmd: "hermes", icon: "⚫" },
+    { name: "OpenClaw", desc: "Personal AI with 100+ skills.", cmd: "openclaw", icon: "🔴" },
+    { name: "OpenCode", desc: "Anomaly's open-source coding agent.", cmd: "opencode", icon: "⬜" },
+    { name: "Codex", desc: "OpenAI's open source coding agent.", cmd: "codex", icon: "🟣" },
+    { name: "Copilot CLI", desc: "GitHub's AI coding agent for the terminal.", cmd: "copilot", icon: "⚪" },
+    { name: "Droid", desc: "Factory's coding agent across terminal and IDEs.", cmd: "droid", icon: "🟤" },
+  ];
 
-  function showSettingsModal(tab) {
-    tab = tab || "general";
-    const c = state.config;
-    modal(`
-      <div class="modal-header">Settings <button class="close-btn" id="closeModal">&times;</button></div>
-      <div class="modal-body">
-        <div class="tabs">
-          <button class="tab" data-tab="general">General</button>
-          <button class="tab" data-tab="model">Model</button>
-          <button class="tab" data-tab="web">Web Search</button>
-          <button class="tab" data-tab="server">Server</button>
-        </div>
-        <div data-pane="general">
-          <div class="field"><label>Default model</label><input type="text" id="cfgDefaultModel" /></div>
-          <div class="field"><label>System prompt</label><textarea id="cfgSystem"></textarea></div>
-        </div>
-        <div data-pane="model" class="hidden">
-          <div class="row">
-            <div class="field"><label>Temperature</label><input type="number" id="cfgTemp" step="0.05" min="0" max="2" /></div>
-            <div class="field"><label>Top K</label><input type="number" id="cfgTopK" min="1" /></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Top P</label><input type="number" id="cfgTopP" step="0.05" min="0" max="1" /></div>
-            <div class="field"><label>Context window</label><input type="number" id="cfgCtx" step="512" /></div>
+  function initLaunchList() {
+    const list = $("#launchList");
+    list.innerHTML = "";
+    LAUNCH_APPS.forEach(app => {
+      const item = document.createElement("div");
+      item.className = "launch-item";
+      item.innerHTML = `
+        <div class="launch-icon">${app.icon}</div>
+        <div class="launch-info">
+          <div class="launch-name">${OllamaMD.escape(app.name)}</div>
+          <div class="launch-desc">${OllamaMD.escape(app.desc)}</div>
+          <div class="launch-cmd-bar">
+            <span class="launch-cmd">ollama launch ${OllamaMD.escape(app.cmd)}</span>
+            <button class="launch-copy" title="Copy">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
           </div>
         </div>
-        <div data-pane="web" class="hidden">
-          <div class="field"><label class="web-search-label"><input type="checkbox" id="cfgWsEnabled" /> Enable built-in web search</label></div>
-          <div class="field"><label>Search provider</label><select id="cfgWsProvider"><option value="duckduckgo">DuckDuckGo (no key)</option><option value="brave">Brave (key)</option><option value="tavily">Tavily (key)</option></select></div>
-          <div class="field"><label>API key (optional)</label><input type="text" id="cfgWsKey" placeholder="Only for Brave/Tavily" /></div>
-          <div class="field"><label>Max results</label><input type="number" id="cfgWsMax" min="1" max="20" /></div>
-        </div>
-        <div data-pane="server" class="hidden">
-          <div class="field"><label>Ollama server URL</label><input type="text" id="cfgServer" /></div>
-          <button class="btn" id="testServer">Test connection</button> <span id="testResult"></span>
-        </div>
-      </div>
-      <div class="modal-footer"><button class="btn" id="cancelSettings">Cancel</button><button class="btn primary" id="saveSettings">Save</button></div>
-    `);
-    $("#cfgDefaultModel").value = c.defaultModel; $("#cfgSystem").value = c.systemPrompt;
-    $("#cfgTemp").value = c.temperature; $("#cfgTopK").value = c.topK;
-    $("#cfgTopP").value = c.topP; $("#cfgCtx").value = c.numCtx; $("#cfgWsEnabled").checked = c.webSearchEnabled;
-    $("#cfgWsProvider").value = c.webSearchProvider || "duckduckgo"; $("#cfgWsKey").value = c.webSearchApiKey || "";
-    $("#cfgWsMax").value = c.maxSearchResults; $("#cfgServer").value = c.serverUrl;
-    $$(".tab").forEach(t => t.addEventListener("click", () => {
-      $$(".tab").forEach(x => x.classList.remove("active")); t.classList.add("active");
-      $$("[data-pane]").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t.dataset.tab));
-    }));
-    const t = $$(`.tab[data-tab="${tab}"]`)[0]; if (t) t.click();
-    $("#closeModal").onclick = closeModal; $("#cancelSettings").onclick = closeModal;
-    $("#testServer").onclick = async () => {
-      $("#testResult").textContent = "Testing…";
-      const ok = await call("testServer", { url: $("#cfgServer").value });
-      $("#testResult").textContent = ok ? "✓ Connected" : "✗ Not reachable";
-    };
-    $("#saveSettings").onclick = async () => {
-      const cfg = {
-        serverUrl: $("#cfgServer").value, defaultModel: $("#cfgDefaultModel").value,
-        webSearchEnabled: $("#cfgWsEnabled").checked, webSearchProvider: $("#cfgWsProvider").value,
-        webSearchApiKey: $("#cfgWsKey").value, theme: "dark",
-        sidebarVisible: state.config.sidebarVisible, zoom: 1,
-        temperature: parseFloat($("#cfgTemp").value) || 0.8, topK: parseInt($("#cfgTopK").value) || 40,
-        topP: parseFloat($("#cfgTopP").value) || 0.9, numCtx: parseInt($("#cfgCtx").value) || 4096,
-        systemPrompt: $("#cfgSystem").value, maxSearchResults: parseInt($("#cfgWsMax").value) || 5,
-        stream: true,
-      };
-      await call("saveConfig", { config: cfg });
-      state.config = cfg;
-      closeModal();
-      toast("Settings saved");
-    };
+      `;
+      item.querySelector(".launch-copy").addEventListener("click", () => {
+        navigator.clipboard.writeText(`ollama launch ${app.cmd}`);
+        toast("Copied to clipboard");
+      });
+      list.appendChild(item);
+    });
   }
 
-  function showModelsModal() {
+  // ---- Settings page ----
+  function initSettings() {
+    $("#profileName").textContent = state.config?.defaultModel || "User";
+    $("#profileAvatar").textContent = (state.config?.defaultModel || "U").charAt(0).toUpperCase();
+
+    // Toggles
+    $$(".toggle").forEach(t => {
+      t.addEventListener("click", () => { t.classList.toggle("on"); });
+    });
+
+    $("#browseModelPath").addEventListener("click", () => toast("Browse dialog would open here"));
+    $("#resetDefaults").addEventListener("click", () => {
+      $$(".toggle").forEach(t => t.classList.add("on"));
+      toast("Settings reset to defaults");
+    });
+  }
+
+  // ---- modals (manage models, pull) ----
+  function showManageModelsModal() {
     modal(`
       <div class="modal-header">Models <button class="close-btn" id="closeModal">&times;</button></div>
       <div class="modal-body">
-        <div style="margin-bottom:12px"><button class="btn" id="refreshModels">Refresh</button> <button class="btn primary" id="pullFromLib">Pull from library…</button></div>
+        <div style="margin-bottom:12px"><button class="pill-btn outline" id="refreshModels">Refresh</button> <button class="pill-btn primary" id="pullFromLib">Pull from library…</button></div>
         <div id="modelsList"></div>
       </div>
-      <div class="modal-footer"><button class="btn" id="closeModels">Close</button></div>
+      <div class="modal-footer"><button class="pill-btn outline" id="closeModels">Close</button></div>
     `);
     const render = () => {
       const list = $("#modelsList"); list.innerHTML = "";
-      if (!state.models.length) { list.innerHTML = '<div class="kv-val">No models installed. Pull one from the library.</div>'; return; }
+      if (!state.models.length) { list.innerHTML = '<div style="color:var(--text-muted);font-size:13px">No models installed. Pull one from the library.</div>'; return; }
       state.models.forEach(m => {
         const row = document.createElement("div"); row.className = "kv-row";
-        row.innerHTML = `<div><div>${OllamaMD.escape(m.name)}</div><div class="kv-val">${formatSize(m.size)}</div></div><div><button class="btn danger" data-del="${OllamaMD.escape(m.name)}">Delete</button></div>`;
+        row.innerHTML = `<div><div>${OllamaMD.escape(m.name)}</div><div class="kv-val">${formatSize(m.size)}</div></div><div><button class="pill-btn outline danger" data-del="${OllamaMD.escape(m.name)}">Delete</button></div>`;
         list.appendChild(row);
       });
       $$("[data-del]").forEach(b => b.addEventListener("click", async () => {
@@ -425,20 +413,19 @@
     $("#pullFromLib").onclick = showPullModal;
   }
 
-  function refreshModels() { return call("listModels").then(m => { state.models = m; renderModelMenu(); if ($("#modelsList")) { showModelsModal(); } }).catch(() => {}); }
+  function refreshModels() { return call("listModels").then(m => { state.models = m; renderModelMenu(); updateComposerModel(); if ($("#modelsList")) showManageModelsModal(); }).catch(() => {}); }
 
   function showPullModal() {
     const popular = ["llama3.2", "llama3.2:1b", "qwen2.5", "phi3", "mistral", "gemma2", "deepseek-r1", "llava", "nomic-embed-text"];
     modal(`
       <div class="modal-header">Pull Model <button class="close-btn" id="closeModal">&times;</button></div>
       <div class="modal-body">
-        <div class="field"><label>Model name</label><input type="text" id="pullName" placeholder="e.g. llama3.2" list="pullList" />
-          <datalist id="pullList">${popular.map(p => `<option value="${p}">`).join("")}</datalist></div>
+        <div class="field"><label>Model name</label><input type="text" id="pullName" placeholder="e.g. llama3.2" list="pullList" style="width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px"/></div>
         <div class="pull-progress"><div class="bar" id="pullBar"></div></div>
-        <div id="pullStatus" class="kv-val"></div>
-        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:#6cb6ff">Browse the model library ↗</a></div>
+        <div id="pullStatus" style="color:var(--text-muted);font-size:13px"></div>
+        <div style="margin-top:8px"><a href="https://ollama.com/library" target="_blank" style="color:var(--accent-blue);font-size:13px">Browse the model library ↗</a></div>
       </div>
-      <div class="modal-footer"><button class="btn" id="cancelPull">Cancel</button><button class="btn primary" id="doPull">Pull</button></div>
+      <div class="modal-footer"><button class="pill-btn outline" id="cancelPull">Cancel</button><button class="pill-btn primary" id="doPull">Pull</button></div>
     `);
     $("#closeModal").onclick = closeModal; $("#cancelPull").onclick = closeModal;
     $("#doPull").onclick = () => {
@@ -453,19 +440,34 @@
     $("#pullBar").style.width = msg.percent + "%";
     $("#pullStatus").textContent = msg.status + (msg.total ? ` · ${msg.percent}%` : "");
   }
-  function onPullDone(msg) { if ($("#pullStatus")) { $("#pullStatus").textContent = "Done: " + msg.name; $("#doPull") && ($("#doPull").disabled = false); } toast("Pulled " + msg.name); refreshModels(); }
+  function onPullDone(msg) { if ($("#pullStatus")) { $("#pullStatus").textContent = "Done: " + msg.name; if ($("#doPull")) $("#doPull").disabled = false; } toast("Pulled " + msg.name); refreshModels(); }
   function onPullCancelled(msg) { if ($("#pullStatus")) $("#pullStatus").textContent = "Cancelled"; if ($("#doPull")) $("#doPull").disabled = false; }
+
+  function modal(html) {
+    const root = $("#modalRoot");
+    root.innerHTML = `<div class="modal">${html}</div>`;
+    root.classList.add("visible");
+    root.onclick = (e) => { if (e.target === root) closeModal(); };
+  }
+  function closeModal() { $("#modalRoot").classList.remove("visible"); $("#modalRoot").innerHTML = ""; }
 
   // ---- UI binding ----
   function bindUI() {
     $("#newChatBtn").addEventListener("click", newChat);
-    $("#sidebarToggle").addEventListener("click", () => $("#sidebar").classList.toggle("collapsed"));
-    $("#settingsBtn").addEventListener("click", () => showSettingsModal("general"));
-    $("#manageModelsBtn").addEventListener("click", showModelsModal);
+    $("#launchBtn").addEventListener("click", () => showView("launch"));
+    $("#settingsBtn").addEventListener("click", () => { showView("settings"); initSettings(); });
+    $("#backFromLaunch").addEventListener("click", () => showView("chat"));
+    $("#backFromSettings").addEventListener("click", () => showView("chat"));
+
+    $("#sidebarToggle") && $("#sidebarToggle").addEventListener("click", () => $("#sidebar").classList.toggle("collapsed"));
     $("#modelBtn").addEventListener("click", (e) => { e.stopPropagation(); $("#modelMenu").classList.toggle("hidden"); });
+    $("#modelPill").addEventListener("click", (e) => { e.stopPropagation(); $("#modelMenu").classList.toggle("hidden"); });
     document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) closeModelMenu(); });
-    $("#webSearchToggle").addEventListener("click", () => { $("#webSearchCheckbox").checked = !$("#webSearchCheckbox").checked; updateWebSearchToggle(); });
-    $("#webSearchCheckbox").addEventListener("change", updateWebSearchToggle);
+
+    $("#webSearchToggle").addEventListener("click", () => {
+      $("#webSearchToggle").classList.toggle("active");
+    });
+
     $("#sendBtn").addEventListener("click", send);
     $("#stopBtn").addEventListener("click", stopGeneration);
     const input = $("#promptInput");
@@ -473,10 +475,6 @@
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
     });
-    $$(".suggestion").forEach(s => s.addEventListener("click", () => {
-      input.value = s.dataset.prompt; autoGrow(); input.focus();
-      if (s.dataset.web) { $("#webSearchCheckbox").checked = true; updateWebSearchToggle(); }
-    }));
   }
 
   function autoGrow() {
@@ -495,18 +493,16 @@
   async function newChat() {
     const chat = await call("newChat", { model: state.currentModel });
     state.chats.unshift(chat);
+    showView("chat");
     openChat(chat.id);
     $("#emptyState").classList.remove("hidden");
+    $("#messages").innerHTML = "";
     $("#promptInput").focus();
-  }
-
-  function updateWebSearchToggle() {
-    $("#webSearchToggle").classList.toggle("active", $("#webSearchCheckbox").checked);
   }
 
   function toast(msg) {
     let t = $("#toast");
-    if (!t) { t = document.createElement("div"); t.id = "toast"; t.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1f1f;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;border:1px solid #2a2a2a"; document.body.appendChild(t); }
+    if (!t) { t = document.createElement("div"); t.id = "toast"; t.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#27272A;color:#FAFAFA;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;border:1px solid #3F3F46"; document.body.appendChild(t); }
     t.textContent = msg; t.style.opacity = "1"; t.style.display = "block";
     clearTimeout(t._h); t._h = setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.style.display = "none", 200); }, 3000);
   }
