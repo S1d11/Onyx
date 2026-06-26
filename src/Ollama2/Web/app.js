@@ -91,6 +91,7 @@
       case "pullError": toast("Pull failed: " + msg.message); break;
       case "updateStatus": onUpdateStatus(msg); break;
       case "updateReady": onUpdateReady(msg); break;
+      case "ollamaStarting": toast("Starting Ollama…"); break;
       case "error": toast(msg.message); break;
     }
   }

@@ -133,13 +133,25 @@ internal sealed class Bridge
     private async Task<object> HandleInitialState()
     {
         var cfg = App.Config.Current;
-        var reachable = await App.Ollama.IsReachableAsync();
+
+        // Auto-launch Ollama if enabled and using localhost
+        if (cfg.AutoLaunchOllama && OllamaLauncher.IsLocalhost(cfg.ServerUrl))
+        {
+            var reachable = await App.Ollama.IsReachableAsync();
+            if (!reachable)
+            {
+                PostToWeb(new { @event = "ollamaStarting" });
+                await OllamaLauncher.EnsureRunningAsync(cfg.ServerUrl);
+            }
+        }
+
+        var reachableFinal = await App.Ollama.IsReachableAsync();
         var hw = HardwareDetector.Detect();
         return new
         {
             config = cfg,
             chats = App.Chats.Chats,
-            serverReachable = reachable,
+            serverReachable = reachableFinal,
             appVersion = UpdateService.CurrentVersion.ToString(3),
             hardware = new
             {
