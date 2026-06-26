@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using Ollama2.Services;
 
@@ -22,6 +24,7 @@ public partial class App : Application
     /// <summary>Populated by the background startup update check. UI is notified via Bridge.</summary>
     public static string? PendingUpdatePath { get; set; }
     public static string? PendingUpdateVersion { get; set; }
+    public static string? PendingUpdateError { get; set; }
 
     public static string DataDir { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ollama2");
@@ -69,17 +72,36 @@ public partial class App : Application
                 {
                     var updater = new UpdateService();
                     var release = await updater.CheckForUpdateAsync();
-                    if (release != null && !string.IsNullOrEmpty(release.DownloadUrl))
+                    if (release == null) return;
+                    if (string.IsNullOrEmpty(release.DownloadUrl))
                     {
-                        var path = await updater.DownloadUpdateAsync(release);
-                        if (!string.IsNullOrEmpty(path))
+                        PendingUpdateError = "Update found but no download URL available.";
+                        return;
+                    }
+                    var path = await updater.DownloadUpdateAsync(release);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        PendingUpdatePath = path;
+                        PendingUpdateVersion = release.TagName;
+                        // Notify the UI window directly if it's already loaded
+                        await Dispatcher.InvokeAsync(() =>
                         {
-                            PendingUpdatePath = path;
-                            PendingUpdateVersion = release.TagName;
-                        }
+                            if (MainWindow is MainWindow win && win.IsLoaded)
+                            {
+                                win.PostWebMessageAsJson(System.Text.Json.JsonSerializer.Serialize(new
+                                {
+                                    @event = "updateReady",
+                                    version = release.TagName,
+                                    path = path,
+                                }));
+                            }
+                        });
                     }
                 }
-                catch { /* silent fail */ }
+                catch (Exception ex)
+                {
+                    PendingUpdateError = ex.Message;
+                }
             });
         }
     }

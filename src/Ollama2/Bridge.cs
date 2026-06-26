@@ -108,7 +108,7 @@ internal sealed class Bridge
                 "exportChat" => HandleExportChat(root),
                 "checkForUpdates" => await _updater.CheckForUpdateAsync(),
                 "downloadUpdate" => await _updater.DownloadUpdateAsync(
-                    root.Deserialize<ReleaseInfo>(_json)!),
+                    root.GetProperty("release").Deserialize<ReleaseInfo>(_json)!),
                 "installUpdate" => HandleInstallUpdate(root),
                 "browseFolder" => HandleBrowseFolder(),
                 _ => null,

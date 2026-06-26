@@ -169,7 +169,13 @@ public class UpdateService
     }
 }
 
-public record ReleaseInfo(Version Version, string TagName, string Body, string DownloadUrl, string AssetName);
+public record ReleaseInfo(
+    [property: System.Text.Json.Serialization.JsonPropertyName("version")] Version Version,
+    [property: System.Text.Json.Serialization.JsonPropertyName("tag_name")] string TagName,
+    [property: System.Text.Json.Serialization.JsonPropertyName("body")] string Body,
+    [property: System.Text.Json.Serialization.JsonPropertyName("download_url")] string DownloadUrl,
+    [property: System.Text.Json.Serialization.JsonPropertyName("asset_name")] string AssetName
+);
 
 public class UpdateStatusEventArgs : EventArgs
 {
