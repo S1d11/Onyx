@@ -378,20 +378,68 @@
     const em = $("#effortMenu");
     if (!picker || !menu || menu.classList.contains("hidden")) return;
     const rect = picker.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const spaceAbove = rect.top - 16;
-    const mh = Math.min(380, Math.max(200, spaceAbove)) + "px";
-    menu.style.maxHeight = mh;
-    if (em && !em.classList.contains("hidden")) em.style.maxHeight = mh;
-    // Ensure combined menus don't go off right edge
     const vw = window.innerWidth;
-    const bothWidth = 320 + 300 + 16; // model menu + effort menu + gap
-    if (rect.left + bothWidth > vw) {
-      menu.style.left = "auto";
-      menu.style.right = "0";
+    const vh = window.innerHeight;
+
+    const menuW = 280;
+    const effortW = 260;
+    const gap = 8;
+    const pad = 16;
+    const bothW = menuW + effortW + gap;
+
+    // ---- Vertical positioning ----
+    const spaceAbove = rect.top - pad;
+    const spaceBelow = vh - rect.bottom - pad;
+    const preferredH = 380;
+    let menuH, openAbove;
+    if (spaceAbove >= preferredH) {
+      menuH = preferredH; openAbove = true;
+    } else if (spaceBelow >= preferredH) {
+      menuH = preferredH; openAbove = false;
+    } else if (spaceAbove >= spaceBelow) {
+      menuH = Math.max(200, spaceAbove); openAbove = true;
     } else {
-      menu.style.left = "0";
-      menu.style.right = "auto";
+      menuH = Math.max(200, spaceBelow); openAbove = false;
+    }
+    menu.style.maxHeight = menuH + "px";
+    if (em && !em.classList.contains("hidden")) em.style.maxHeight = menuH + "px";
+
+    const menuTop = openAbove ? (rect.top - menuH - gap) : (rect.bottom + gap);
+    menu.style.top = menuTop + "px";
+    if (em && !em.classList.contains("hidden")) em.style.top = menuTop + "px";
+
+    // ---- Horizontal positioning ----
+    // Model menu: try left-aligned, fallback to right-aligned
+    let menuLeft = rect.left;
+    if (menuLeft + menuW > vw - pad) {
+      menuLeft = Math.max(pad, rect.right - menuW);
+    }
+    menu.style.left = menuLeft + "px";
+    menu.style.bottom = "auto";
+
+    // Effort menu: try right of model menu, fallback to left
+    if (em && !em.classList.contains("hidden")) {
+      let effortLeft = menuLeft + menuW + gap;
+      let effortRight = menuLeft - effortW - gap;
+      if (effortLeft + effortW <= vw - pad) {
+        em.style.left = effortLeft + "px";
+        em.style.right = "auto";
+      } else if (effortRight >= pad) {
+        em.style.left = effortRight + "px";
+        em.style.right = "auto";
+      } else {
+        // Not enough room either side — shrink and place wherever there's more room
+        const roomRight = vw - menuLeft - menuW - gap - pad;
+        const roomLeft = menuLeft - gap - pad;
+        if (roomRight >= roomLeft) {
+          em.style.left = (menuLeft + menuW + gap) + "px";
+          em.style.maxWidth = Math.max(180, roomRight) + "px";
+        } else {
+          em.style.left = Math.max(pad, menuLeft - gap - effortW) + "px";
+          em.style.maxWidth = Math.max(180, roomLeft) + "px";
+        }
+      }
+      em.style.bottom = "auto";
     }
   }
 
@@ -1006,6 +1054,7 @@
       const wasHidden = menu.classList.contains("hidden");
       menu.classList.toggle("hidden");
       if (wasHidden) { renderModelMenu(); positionMenu(); }
+      else { hideEffortMenu(); }
     });
     document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) { closeModelMenu(); hideEffortMenu(); } });
     window.addEventListener("resize", () => { positionMenu(); });

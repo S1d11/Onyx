@@ -160,20 +160,20 @@ button { cursor: pointer; }
 #composerModelPicker .model-btn:hover { background: var(--surface-hover); color: var(--text); }
 #composerModelPicker .model-btn svg { width: 10px; height: 10px; color: var(--text-muted); }
 .model-menu {
-  position: absolute; bottom: calc(100% + 8px); left: 0; min-width: 280px; max-width: 320px; max-height: 380px;
+  position: absolute; min-width: 280px; max-width: 320px; max-height: 380px;
   overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-xl); padding: 8px; z-index: 50;
-  box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   scrollbar-width: thin;
 }
 .model-menu::-webkit-scrollbar { width: 4px; }
 .model-menu::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 .effort-menu {
-  position: absolute; bottom: calc(100% + 8px); left: calc(100% + 8px); min-width: 260px; max-width: 300px; max-height: 380px;
+  position: absolute; min-width: 260px; max-width: 300px; max-height: 380px;
   overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-xl); padding: 8px; z-index: 50;
-  box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   scrollbar-width: thin;
 }
 .effort-menu::-webkit-scrollbar { width: 4px; }
