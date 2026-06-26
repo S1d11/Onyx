@@ -50,15 +50,16 @@ button { cursor: pointer; }
 #sidebar.collapsed { width: 0; border-right: none; overflow: hidden; }
 
 .sidebar-toggle {
+  position: fixed; top: 8px; left: 10px; z-index: 60;
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border-radius: var(--radius-md);
-  color: var(--text-muted); margin: 8px 10px 2px;
+  color: var(--text-muted);
   transition: background 0.1s, color 0.1s;
 }
 .sidebar-toggle:hover { background: var(--surface-hover); color: var(--text); }
 .sidebar-toggle svg { width: 16px; height: 16px; }
 
-.sidebar-header { padding: 2px 10px 0; }
+.sidebar-header { padding: 40px 10px 0; }
 
 .nav-btn {
   display: flex; align-items: center; gap: 8px;
