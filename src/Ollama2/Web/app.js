@@ -78,7 +78,7 @@
       state.currentModel = state.config.defaultModel;
       $("#composerModelLabel").textContent = state.currentModel || "Select";
       updateComposerModel();
-      if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); $("#topbar").classList.add("has-toggle"); }
+      if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); }
       const spn2 = $("#sidebarProfileName"); if (spn2) spn2.textContent = state.config.defaultModel || "User";
       const spa2 = $("#sidebarProfileAvatar"); if (spa2) spa2.textContent = (state.config.defaultModel || "U").charAt(0).toUpperCase();
     }
@@ -993,7 +993,6 @@
       sb.classList.toggle("collapsed");
       const isCollapsed = sb.classList.contains("collapsed");
       $("#topbarNewChat").classList.toggle("hidden", !isCollapsed);
-      $("#topbar").classList.toggle("has-toggle", isCollapsed);
     });
     $("#topbarNewChat").addEventListener("click", newChat);
     $("#modelPill").addEventListener("click", (e) => {
@@ -1027,7 +1026,7 @@
     document.addEventListener("keydown", (e) => {
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === "n") { e.preventDefault(); newChat(); }
-      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); const col = $("#sidebar").classList.contains("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !col); $("#topbar").classList.toggle("has-toggle", col); }
+      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); const col = $("#sidebar").classList.contains("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !col); }
       else if (e.key === "Escape" && state.streaming) { stopGeneration(); }
     });
   }
