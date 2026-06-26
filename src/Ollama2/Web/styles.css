@@ -293,6 +293,33 @@ button { cursor: pointer; }
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; padding: 24px;
   opacity: 0; animation: fadeIn 0.3s ease forwards;
+  transition: flex 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.4s ease;
+}
+
+/* Raised composer when chat is empty */
+.chat-empty .empty-state {
+  flex: 0 0 auto;
+  padding-top: 10vh;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.chat-empty .composer-wrapper {
+  margin-top: auto;
+  margin-bottom: auto;
+  padding: 20px 32px 32px;
+  max-width: 760px;
+  width: 100%;
+  align-self: center;
+  transition: margin 0.5s cubic-bezier(0.16, 1, 0.3, 1), padding 0.5s ease, max-width 0.5s ease;
+}
+.chat-empty .composer-box {
+  min-height: 64px;
+  padding: 14px 18px;
+  transition: min-height 0.5s ease, padding 0.5s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.chat-empty #promptInput {
+  font-size: 16px;
+  transition: font-size 0.3s ease;
 }
 .empty-logo {
   width: 80px; height: 80px; color: var(--text); opacity: 0.95;
@@ -356,12 +383,15 @@ button { cursor: pointer; }
 }
 
 /* ===== Composer ===== */
-.composer-wrapper { padding: 16px 24px 20px; flex-shrink: 0; }
+.composer-wrapper {
+  padding: 16px 24px 20px; flex-shrink: 0;
+  transition: margin 0.5s cubic-bezier(0.16, 1, 0.3, 1), padding 0.5s ease, max-width 0.5s ease;
+}
 .composer-box {
   max-width: 720px; margin: 0 auto; display: flex; align-items: flex-end; gap: 8px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-2xl);
   padding: 10px 12px; min-height: 52px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, min-height 0.5s ease, padding 0.5s ease;
 }
 .composer-box:focus-within { border-color: var(--surface-hover); box-shadow: 0 0 0 3px rgba(250,250,250,0.06); }
 #promptInput {

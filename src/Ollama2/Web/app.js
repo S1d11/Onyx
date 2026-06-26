@@ -194,8 +194,9 @@
     updateComposerModel();
     renderChatList();
     renderMessages(c);
-    $("#emptyState").classList.toggle("hidden", c.messages.length > 0);
-  }
+    const empty = c.messages.length === 0;
+    $("#emptyState").classList.toggle("hidden", !empty);
+    $("#viewChat").classList.toggle("chat-empty", empty);
 
   function renderMessages(c) {
     const m = $("#messages");
@@ -489,6 +490,7 @@
     chat.messages.push({ role: "user", content: text });
     appendMessageEl("user", text);
     $("#emptyState").classList.add("hidden");
+    $("#viewChat").classList.remove("chat-empty");
     input.value = ""; autoGrow();
 
     const el = appendMessageEl("assistant", "");
@@ -614,6 +616,7 @@
         state.currentId = null;
         $("#messages").innerHTML = "";
         $("#emptyState").classList.remove("hidden");
+        $("#viewChat").classList.add("chat-empty");
       }
       renderChatList();
       return;
@@ -624,6 +627,7 @@
       state.currentId = null;
       $("#messages").innerHTML = "";
       $("#emptyState").classList.remove("hidden");
+      $("#viewChat").classList.add("chat-empty");
     }
     renderChatList();
   }
@@ -1098,6 +1102,7 @@
     renderChatList();
     $("#messages").innerHTML = "";
     $("#emptyState").classList.remove("hidden");
+    $("#viewChat").classList.add("chat-empty");
     $("#promptInput").focus();
   }
 
