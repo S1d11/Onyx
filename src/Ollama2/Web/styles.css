@@ -111,9 +111,14 @@ button { cursor: pointer; }
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .chat-item .ci-rename-input {
-  background: var(--bg); border: 1px solid var(--border-light); color: var(--text);
-  border-radius: 4px; padding: 2px 6px; font-size: 13px; width: 100%;
-  outline: none;
+  background: var(--surface); border: 1px solid var(--border-light); color: var(--text);
+  border-radius: 4px; padding: 3px 7px; font-size: 13px; width: 100%;
+  outline: none; caret-color: var(--text);
+  box-shadow: 0 0 0 1px var(--border-light);
+}
+.chat-item .ci-rename-input:focus {
+  border-color: var(--text-muted);
+  box-shadow: 0 0 0 2px rgba(244,244,245,0.12);
 }
 
 /* Context menu */

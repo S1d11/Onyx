@@ -204,7 +204,8 @@
     input.type = "text";
     input.className = "ci-rename-input";
     input.value = c.title;
-    input.style.width = el.offsetWidth + "px";
+    // Account for chat-item padding so input fits inside content box
+    input.style.width = Math.max(80, el.offsetWidth - 24) + "px";
     el.innerHTML = "";
     el.appendChild(input);
     input.focus();
