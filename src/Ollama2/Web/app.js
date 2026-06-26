@@ -197,6 +197,7 @@
     const empty = c.messages.length === 0;
     $("#emptyState").classList.toggle("hidden", !empty);
     $("#viewChat").classList.toggle("chat-empty", empty);
+  }
 
   function renderMessages(c) {
     const m = $("#messages");
@@ -407,7 +408,7 @@
 
     const menuTop = openAbove ? (rect.top - menuH - gap) : (rect.bottom + gap);
     menu.style.top = menuTop + "px";
-    if (em && !em.classList.contains("hidden")) em.style.top = menuTop + "px";
+    if (em && em.classList.contains("open")) em.style.top = menuTop + "px";
 
     // ---- Horizontal positioning ----
     // Model menu: try left-aligned, fallback to right-aligned

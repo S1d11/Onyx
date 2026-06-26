@@ -66,7 +66,8 @@ public partial class MainWindow : Window
         core.WebMessageReceived += OnWebMessageReceived;
         core.NavigationCompleted += (_, _) => _bridge.SendInitialState();
 
-        core.Navigate("https://ollama.app/index.html");
+        var cacheBuster = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        core.Navigate($"https://ollama.app/index.html?v={cacheBuster}");
     }
 
     private static string ExtractWebAssets()
