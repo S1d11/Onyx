@@ -76,7 +76,7 @@
     state.hardware = data.hardware || null;
     if (state.config) {
       state.currentModel = state.config.defaultModel;
-      $("#modelLabel").textContent = state.currentModel || "Select a model";
+      $("#composerModelLabel").textContent = state.currentModel || "Select";
       updateComposerModel();
       if (!state.config.sidebarVisible) $("#sidebar").classList.add("collapsed");
     }
@@ -188,7 +188,7 @@
     const c = state.chats.find(x => x.id === id) || (state.draftChat && state.draftChat.id === id ? state.draftChat : null);
     if (!c) return;
     state.currentModel = c.model || state.currentModel;
-    $("#modelLabel").textContent = state.currentModel || "Select a model";
+    $("#composerModelLabel").textContent = state.currentModel || "Select";
     updateComposerModel();
     renderChatList();
     renderMessages(c);
@@ -249,20 +249,36 @@
     const menu = $("#modelMenu");
     menu.innerHTML = "";
     if (!state.models.length) {
-      menu.innerHTML = `<div class="model-item"><div class="mi-name">No models installed</div><div class="mi-meta">Pull a model to get started</div></div><div class="mm-sep"></div>`;
+      const empty = document.createElement("div");
+      empty.className = "model-item";
+      empty.innerHTML = `<div class="model-item-left"><div class="mi-name">No models installed</div><div class="mi-desc">Pull a model to get started</div></div>`;
+      menu.appendChild(empty);
     }
     state.models.forEach(mo => {
+      const info = getModelInfo(mo.name);
       const it = document.createElement("div");
       it.className = "model-item" + (mo.name === state.currentModel ? " selected" : "");
-      it.innerHTML = `<div class="mi-name">${OllamaMD.escape(mo.name)}</div><div class="mi-meta">${formatSize(mo.size)}</div>`;
+      const isSelected = mo.name === state.currentModel;
+      it.innerHTML = `
+        <div class="model-item-left">
+          <div class="mi-name">${OllamaMD.escape(mo.name)}</div>
+          <div class="mi-desc">${OllamaMD.escape(info.desc)}</div>
+          <div class="mi-meta">${formatSize(mo.size)}${info.context ? ` · ${info.context} context` : ""}${info.tags.length ? ` · ${info.tags.join(", ")}` : ""}</div>
+        </div>
+        <div class="mi-check${isSelected ? "" : " hidden"}">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+      `;
       it.addEventListener("click", () => { selectModel(mo.name); closeModelMenu(); });
       menu.appendChild(it);
     });
     const sep = document.createElement("div"); sep.className = "mm-sep"; menu.appendChild(sep);
-    const pull = document.createElement("div"); pull.className = "mm-action"; pull.textContent = "+ Pull a model…";
+    const pull = document.createElement("div"); pull.className = "mm-action";
+    pull.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Pull a model…</span>`;
     pull.addEventListener("click", () => { closeModelMenu(); showPullModal(); });
     menu.appendChild(pull);
-    const manage = document.createElement("div"); manage.className = "mm-action"; manage.textContent = "Manage models";
+    const manage = document.createElement("div"); manage.className = "mm-action";
+    manage.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.72l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.72l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.72l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.72l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.72V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span>Manage models</span>`;
     manage.addEventListener("click", () => { closeModelMenu(); showManageModelsModal(); });
     menu.appendChild(manage);
   }
@@ -279,7 +295,7 @@
 
   function selectModel(name) {
     state.currentModel = name;
-    $("#modelLabel").textContent = name;
+    $("#composerModelLabel").textContent = name;
     updateComposerModel();
     if (state.currentId) { const c = state.chats.find(x => x.id === state.currentId); if (c) c.model = name; }
     renderModelMenu();
@@ -839,7 +855,6 @@
     $("#backFromSettings").addEventListener("click", () => showView("chat"));
 
     $("#sidebarToggle") && $("#sidebarToggle").addEventListener("click", () => $("#sidebar").classList.toggle("collapsed"));
-    $("#modelBtn").addEventListener("click", (e) => { e.stopPropagation(); $("#modelMenu").classList.toggle("hidden"); });
     $("#modelPill").addEventListener("click", (e) => { e.stopPropagation(); $("#modelMenu").classList.toggle("hidden"); });
     document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) closeModelMenu(); });
 

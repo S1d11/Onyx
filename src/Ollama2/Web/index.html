@@ -57,13 +57,6 @@
         <button class="icon-btn" id="sidebarToggle" title="Toggle sidebar" style="margin-right:auto">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <div class="model-picker">
-          <button id="modelBtn" class="model-btn">
-            <span id="modelLabel">Select a model</span>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-          </button>
-          <div id="modelMenu" class="model-menu hidden"></div>
-        </div>
       </div>
       <div id="messages" class="messages"></div>
       <div id="emptyState" class="empty-state">
@@ -94,10 +87,13 @@
                 <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
               </svg>
             </button>
-            <button id="modelPill" class="model-btn">
-              <span id="composerModelLabel">Select</span>
-              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
+            <div class="model-picker" id="composerModelPicker">
+              <button id="modelPill" class="model-btn">
+                <span id="composerModelLabel">Select</span>
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div id="modelMenu" class="model-menu hidden"></div>
+            </div>
             <button id="sendBtn" class="send-btn" title="Send message">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 2L11 13"/>
