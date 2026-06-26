@@ -412,8 +412,9 @@
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const mr = menu.getBoundingClientRect();
-    menu.style.left = Math.min(x, vw - mr.width - 8) + "px";
-    menu.style.top = Math.min(y, vh - mr.height - 8) + "px";
+    const pad = 8;
+    menu.style.left = Math.max(pad, Math.min(x, vw - mr.width - pad)) + "px";
+    menu.style.top = Math.max(pad, Math.min(y, vh - mr.height - pad)) + "px";
 
     // Close on next click anywhere
     const closeOnClick = (ev) => {

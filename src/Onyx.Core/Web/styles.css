@@ -198,6 +198,7 @@ button { cursor: pointer; }
 }
 .model-menu::-webkit-scrollbar { width: 4px; }
 .model-menu::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+.model-menu::-webkit-scrollbar-track { background: transparent; }
 
 .effort-menu {
   position: fixed; min-width: 260px; max-width: 300px; max-height: 380px;
@@ -216,6 +217,7 @@ button { cursor: pointer; }
 }
 .effort-menu::-webkit-scrollbar { width: 4px; }
 .effort-menu::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+.effort-menu::-webkit-scrollbar-track { background: transparent; }
 .model-item {
   padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer;
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
