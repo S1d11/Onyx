@@ -90,9 +90,9 @@
   // ---- View routing ----
   function showView(name) {
     state.view = name;
-    $("#viewChat").classList.toggle("hidden", name !== "chat");
-    $("#viewLaunch").classList.toggle("hidden", name !== "launch");
-    $("#viewSettings").classList.toggle("hidden", name !== "settings");
+    $("#viewChat").classList.toggle("active", name === "chat");
+    $("#viewLaunch").classList.toggle("active", name === "launch");
+    $("#viewSettings").classList.toggle("active", name === "settings");
     if (name === "chat") $("#promptInput").focus();
   }
 
@@ -313,7 +313,7 @@
   function showEffortSubmenu() {
     const em = $("#effortMenu");
     em.innerHTML = "";
-    em.classList.remove("hidden");
+    em.classList.add("open");
 
     // Description
     const desc = document.createElement("div"); desc.className = "mm-submenu-desc";
@@ -369,14 +369,14 @@
   }
 
   function hideEffortMenu() {
-    $("#effortMenu")?.classList.add("hidden");
+    $("#effortMenu")?.classList.remove("open");
   }
 
   function positionMenu() {
     const picker = $("#composerModelPicker");
     const menu = $("#modelMenu");
     const em = $("#effortMenu");
-    if (!picker || !menu || menu.classList.contains("hidden")) return;
+    if (!picker || !menu || !menu.classList.contains("open")) return;
     const rect = picker.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -402,7 +402,7 @@
       menuH = Math.max(200, spaceBelow); openAbove = false;
     }
     menu.style.maxHeight = menuH + "px";
-    if (em && !em.classList.contains("hidden")) em.style.maxHeight = menuH + "px";
+    if (em && em.classList.contains("open")) em.style.maxHeight = menuH + "px";
 
     const menuTop = openAbove ? (rect.top - menuH - gap) : (rect.bottom + gap);
     menu.style.top = menuTop + "px";
@@ -418,7 +418,7 @@
     menu.style.bottom = "auto";
 
     // Effort menu: try right of model menu, fallback to left
-    if (em && !em.classList.contains("hidden")) {
+    if (em && em.classList.contains("open")) {
       let effortLeft = menuLeft + menuW + gap;
       let effortRight = menuLeft - effortW - gap;
       if (effortLeft + effortW <= vw - pad) {
@@ -461,7 +461,7 @@
     renderModelMenu();
   }
 
-  function closeModelMenu() { $("#modelMenu")?.classList.add("hidden"); hideEffortMenu(); }
+  function closeModelMenu() { $("#modelMenu")?.classList.remove("open"); hideEffortMenu(); }
 
   // ---- send / stream ----
   async function send() {
@@ -1051,12 +1051,12 @@
     $("#modelPill").addEventListener("click", (e) => {
       e.stopPropagation();
       const menu = $("#modelMenu");
-      const wasHidden = menu.classList.contains("hidden");
-      menu.classList.toggle("hidden");
-      if (wasHidden) { renderModelMenu(); positionMenu(); }
+      const wasClosed = !menu.classList.contains("open");
+      menu.classList.toggle("open");
+      if (wasClosed) { renderModelMenu(); positionMenu(); }
       else { hideEffortMenu(); }
     });
-    document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) { closeModelMenu(); hideEffortMenu(); } });
+    document.addEventListener("click", (e) => { if (!e.target.closest(".model-picker")) { closeModelMenu(); } });
     window.addEventListener("resize", () => { positionMenu(); });
 
     $("#webSearchToggle").addEventListener("click", () => {
