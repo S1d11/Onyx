@@ -187,14 +187,18 @@
     // SVG icons keyed by connector id — uses actual brand logos
     const ICONS = {
       filesystem: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
-      system: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.72l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.72l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.72l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.72l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.72V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
+      system: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
       github: `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>`,
+      gmail: `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C19.69 2.28 22 3.434 22 5.457z"/></svg>`,
+      gdrive: `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M7.71 3.5L1.15 15l3.42 6 6.56-11.5L7.71 3.5zm10.58 0H8.84l6.56 11.5h9.45L18.29 3.5zM7.16 16.5L4.01 22h11.16l3.15-5.5H7.16z"/></svg>`,
     };
 
     const connectors = state.connectors && state.connectors.length > 0 ? state.connectors : [
       { id: "filesystem", name: "Filesystem", description: "Read, write, delete, and list files and directories on your computer.", color: "#6366f1", connected: true },
       { id: "system", name: "System", description: "Run shell commands, manage registry, environment variables, PATH, and processes.", color: "#f59e0b", connected: true },
       { id: "github", name: "GitHub", description: "Access your repositories, issues, pull requests, and code. Search repos, create issues, read files, and more.", color: "#181717", connected: false },
+      { id: "gmail", name: "Gmail", description: "List, search, read, and send emails from your Gmail account.", color: "#ea4335", connected: false },
+      { id: "gdrive", name: "Google Drive", description: "List, search, read, upload, and manage files in Google Drive.", color: "#0f9d58", connected: false },
     ];
 
     connectors.forEach(conn => {
@@ -215,6 +219,8 @@
       card.addEventListener("click", () => {
         if (conn.id === "github" && !conn.connected) {
           showGitHubConnectDialog();
+        } else if ((conn.id === "gmail" || conn.id === "gdrive") && !conn.connected) {
+          showGoogleConnectDialog();
         }
       });
       grid.appendChild(card);
@@ -250,6 +256,58 @@
       dialog.remove();
       renderConnections();
       toast("GitHub connected");
+    });
+  }
+
+  function showGoogleConnectDialog() {
+    const existing = document.querySelector(".google-connect-dialog");
+    if (existing) existing.remove();
+
+    const dialog = document.createElement("div");
+    dialog.className = "google-connect-dialog";
+    dialog.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:300;";
+    dialog.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:480px;max-width:90vw;">
+        <h3 style="margin:0 0 8px;font-size:16px;color:var(--text);">Connect Google (Gmail + Drive)</h3>
+        <p style="margin:0 0 12px;font-size:13px;color:var(--text-muted);">Enter your Google OAuth credentials. Both Gmail and Google Drive will be connected with the same account.</p>
+        <p style="margin:0 0 12px;font-size:12px;color:var(--text-muted);">
+          Create a project at <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent);">Google Cloud Console</a>,
+          enable Gmail API + Google Drive API, and create an OAuth 2.0 Client ID (type: Desktop app).
+        </p>
+        <input type="text" id="googleClientIdInput" placeholder="Client ID (e.g. xxx.apps.googleusercontent.com)" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text);font-size:13px;margin-bottom:10px;box-sizing:border-box;" />
+        <input type="password" id="googleClientSecretInput" placeholder="Client Secret" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text);font-size:13px;margin-bottom:16px;box-sizing:border-box;" />
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="googleCancel" style="padding:8px 16px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface-hover);color:var(--text);font-size:13px;cursor:pointer;">Cancel</button>
+          <button id="googleConnect" style="padding:8px 16px;border-radius:var(--radius-md);border:none;background:#ea4335;color:white;font-size:13px;cursor:pointer;">Connect</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelector("#googleCancel").addEventListener("click", () => dialog.remove());
+    dialog.querySelector("#googleConnect").addEventListener("click", async () => {
+      const clientId = dialog.querySelector("#googleClientIdInput").value.trim();
+      const clientSecret = dialog.querySelector("#googleClientSecretInput").value.trim();
+      if (!clientId || !clientSecret) return;
+      dialog.querySelector("#googleConnect").textContent = "Opening browser...";
+      dialog.querySelector("#googleConnect").disabled = true;
+      try {
+        const result = await call("connectGoogle", { clientId, clientSecret });
+        if (result && result.success) {
+          state.config.googleRefreshToken = "connected";
+          dialog.remove();
+          renderConnections();
+          toast("Google connected — Gmail + Drive ready");
+        } else {
+          toast("Failed to connect Google. Check your credentials.");
+          dialog.querySelector("#googleConnect").textContent = "Connect";
+          dialog.querySelector("#googleConnect").disabled = false;
+        }
+      } catch (e) {
+        toast("Connection error: " + (e.message || e));
+        dialog.querySelector("#googleConnect").textContent = "Connect";
+        dialog.querySelector("#googleConnect").disabled = false;
+      }
     });
   }
 

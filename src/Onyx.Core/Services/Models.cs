@@ -31,6 +31,11 @@ public class AppConfig
     public bool StartMinimized { get; set; } = false;
     public bool LaunchOnStartup { get; set; } = true;
     public string? GitHubToken { get; set; }
+    public string? GoogleClientId { get; set; }
+    public string? GoogleClientSecret { get; set; }
+    public string? GoogleRefreshToken { get; set; }
+    public string? GoogleAccessToken { get; set; }
+    public long GoogleTokenExpiry { get; set; }
 }
 
 public class ModelInfo

@@ -54,6 +54,16 @@ public sealed class AppContext
         var githubConnector = new GitHubConnector(() => Config.Current.GitHubToken);
         Orchestrator.Tools.Register(GitHubConnector.Definition, githubConnector);
         GitHubConnector = githubConnector;
+
+        // Register Google connectors (Gmail + Drive) — share the same OAuth service
+        GoogleOAuth = new GoogleOAuthService(Config);
+        var gmailConnector = new GmailConnector(GoogleOAuth);
+        Orchestrator.Tools.Register(GmailConnector.Definition, gmailConnector);
+        GmailConnector = gmailConnector;
+
+        var gdriveConnector = new GoogleDriveConnector(GoogleOAuth);
+        Orchestrator.Tools.Register(GoogleDriveConnector.Definition, gdriveConnector);
+        GoogleDriveConnector = gdriveConnector;
     }
 
     public string DataDir { get; }
@@ -65,6 +75,9 @@ public sealed class AppContext
     public FilesystemConnector? FilesystemConnector { get; }
     public SystemTool? SystemTool { get; }
     public GitHubConnector GitHubConnector { get; } = null!;
+    public GoogleOAuthService GoogleOAuth { get; } = null!;
+    public GmailConnector GmailConnector { get; } = null!;
+    public GoogleDriveConnector GoogleDriveConnector { get; } = null!;
 
     public void SaveAll()
     {

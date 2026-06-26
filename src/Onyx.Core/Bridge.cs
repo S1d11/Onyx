@@ -103,6 +103,8 @@ public sealed class Bridge
                 "setLaunchOnStartup" => HandleSetLaunchOnStartup(payload),
                 "browseFolder" => _host.BrowseFolder(),
                 "confirmSystemAction" => HandleConfirmSystemAction(payload),
+                "connectGoogle" => await HandleConnectGoogle(payload),
+                "disconnectGoogle" => HandleDisconnectGoogle(),
                 _ => null,
             };
             ReplyOk(rpcId, data);
@@ -161,11 +163,14 @@ public sealed class Bridge
     private static List<object> GetConnectorStatuses()
     {
         var cfg = AppContext.Current.Config.Current;
+        var googleConnected = !string.IsNullOrEmpty(cfg.GoogleRefreshToken);
         return new()
         {
-            new { id = "filesystem", name = "Filesystem", description = "Read, write, delete, and list files and directories on your computer.", icon = "📁", color = "#6366f1", connected = true },
-            new { id = "system", name = "System", description = "Run shell commands, manage registry (Windows), environment variables, PATH, and processes.", icon = "⚙️", color = "#f59e0b", connected = true },
-            new { id = "github", name = "GitHub", description = "Access your repositories, issues, pull requests, and code. Search repos, create issues, read files, and more.", icon = "🐙", color = "#181717", connected = !string.IsNullOrEmpty(cfg.GitHubToken) },
+            new { id = "filesystem", name = "Filesystem", description = "Read, write, delete, and list files and directories on your computer.", color = "#6366f1", connected = true },
+            new { id = "system", name = "System", description = "Run shell commands, manage registry, environment variables, PATH, and processes.", color = "#f59e0b", connected = true },
+            new { id = "github", name = "GitHub", description = "Access your repositories, issues, pull requests, and code. Search repos, create issues, read files, and more.", color = "#181717", connected = !string.IsNullOrEmpty(cfg.GitHubToken) },
+            new { id = "gmail", name = "Gmail", description = "List, search, read, and send emails from your Gmail account.", color = "#ea4335", connected = googleConnected },
+            new { id = "gdrive", name = "Google Drive", description = "List, search, read, upload, and manage files in Google Drive.", color = "#0f9d58", connected = googleConnected },
         };
     }
 
@@ -272,6 +277,21 @@ public sealed class Bridge
         var confirmId = root.GetProperty("confirmId").GetString()!;
         var approved = root.GetProperty("approved").GetBoolean();
         _confirmationResults[confirmId] = approved;
+        return true;
+    }
+
+    private async Task<object> HandleConnectGoogle(JsonElement root)
+    {
+        var clientId = root.GetProperty("clientId").GetString()!;
+        var clientSecret = root.GetProperty("clientSecret").GetString()!;
+        var oauth = AppContext.Current.GoogleOAuth;
+        var refreshToken = await oauth.StartOAuthFlowAsync(clientId, clientSecret, default);
+        return new { success = !string.IsNullOrEmpty(refreshToken), connected = !string.IsNullOrEmpty(refreshToken) };
+    }
+
+    private bool HandleDisconnectGoogle()
+    {
+        AppContext.Current.GoogleOAuth.Disconnect();
         return true;
     }
 
