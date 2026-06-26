@@ -96,45 +96,68 @@
     state.chats.forEach(c => {
       const el = document.createElement("div");
       el.className = "chat-item" + (c.id === state.currentId ? " active" : "");
-
-      const titleSpan = document.createElement("span");
-      titleSpan.className = "ci-title";
-      titleSpan.textContent = c.title;
-      titleSpan.title = "Double-click to rename";
-      titleSpan.addEventListener("dblclick", (ev) => {
-        ev.stopPropagation();
-        startRename(el, c);
-      });
-      el.appendChild(titleSpan);
-
-      const actions = document.createElement("span");
-      actions.className = "ci-actions";
-      actions.innerHTML = `
-        <button class="ci-rename" title="Rename">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-        </button>
-        <button class="ci-del" title="Delete">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      `;
-      actions.querySelector(".ci-rename").addEventListener("click", (ev) => { ev.stopPropagation(); startRename(el, c); });
-      actions.querySelector(".ci-del").addEventListener("click", (ev) => { ev.stopPropagation(); deleteChat(c.id); });
-      el.appendChild(actions);
-
+      el.textContent = c.title;
       el.addEventListener("click", () => openChat(c.id));
+      el.addEventListener("contextmenu", (ev) => {
+        ev.preventDefault();
+        showContextMenu(ev.clientX, ev.clientY, c, el);
+      });
       list.appendChild(el);
     });
   }
 
+  let _ctxMenu = null;
+  function showContextMenu(x, y, c, el) {
+    if (_ctxMenu) { _ctxMenu.remove(); _ctxMenu = null; }
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.innerHTML = `
+      <div class="context-menu-item" data-action="rename">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        <span>Rename</span>
+      </div>
+      <div class="context-menu-item danger" data-action="delete">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        <span>Delete</span>
+      </div>
+    `;
+
+    menu.querySelector('[data-action="rename"]').addEventListener("click", () => {
+      menu.remove(); _ctxMenu = null;
+      startRename(el, c);
+    });
+    menu.querySelector('[data-action="delete"]').addEventListener("click", () => {
+      menu.remove(); _ctxMenu = null;
+      deleteChat(c.id);
+    });
+
+    document.body.appendChild(menu);
+    _ctxMenu = menu;
+
+    // Position, keep inside viewport
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const mr = menu.getBoundingClientRect();
+    menu.style.left = Math.min(x, vw - mr.width - 8) + "px";
+    menu.style.top = Math.min(y, vh - mr.height - 8) + "px";
+
+    // Close on next click anywhere
+    const closeOnClick = (ev) => {
+      if (!menu.contains(ev.target)) { menu.remove(); _ctxMenu = null; document.removeEventListener("click", closeOnClick); }
+    };
+    // Delay so current click doesn't immediately close it
+    setTimeout(() => document.addEventListener("click", closeOnClick), 0);
+  }
+
   function startRename(el, c) {
-    const titleSpan = el.querySelector(".ci-title");
-    if (!titleSpan) return;
     const input = document.createElement("input");
     input.type = "text";
     input.className = "ci-rename-input";
     input.value = c.title;
-    input.style.width = titleSpan.offsetWidth + "px";
-    titleSpan.replaceWith(input);
+    input.style.width = el.offsetWidth + "px";
+    el.innerHTML = "";
+    el.appendChild(input);
     input.focus();
     input.select();
 

@@ -73,27 +73,33 @@ button { cursor: pointer; }
   color: var(--text-secondary); font-size: 13px; font-weight: 400;
   cursor: pointer; transition: background 0.1s, color 0.1s;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  position: relative; padding-right: 52px;
 }
 .chat-item:hover { background: var(--surface-hover); color: var(--text); }
 .chat-item.active { background: var(--surface-hover); color: var(--text); }
-.chat-item .ci-actions {
-  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-  opacity: 0; display: flex; align-items: center; gap: 2px;
-  transition: opacity 0.1s;
-}
-.chat-item:hover .ci-actions { opacity: 1; }
-.chat-item .ci-actions button {
-  padding: 2px 4px; border-radius: 4px; color: var(--text-muted);
-  font-size: 13px; line-height: 1; display: flex; align-items: center;
-}
-.chat-item .ci-actions button:hover { color: var(--text); background: var(--surface-pressed); }
-.chat-item .ci-actions .ci-del:hover { color: var(--danger); background: var(--surface-pressed); }
 .chat-item .ci-rename-input {
   background: var(--bg); border: 1px solid var(--border); color: var(--text);
   border-radius: 4px; padding: 2px 6px; font-size: 13px; width: 100%;
   outline: none;
 }
+
+/* Context menu */
+.context-menu {
+  position: fixed; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  min-width: 160px;
+}
+.context-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--radius-md);
+  color: var(--text); font-size: 13px; cursor: pointer;
+  transition: background 0.1s;
+}
+.context-menu-item:hover { background: var(--surface-hover); }
+.context-menu-item.danger { color: var(--danger); }
+.context-menu-item.danger:hover { background: rgba(239,68,68,0.1); }
+.context-menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
 
 /* ===== Main ===== */
 #main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
