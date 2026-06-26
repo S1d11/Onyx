@@ -298,18 +298,19 @@ button { cursor: pointer; }
 /* Raised composer when chat is empty */
 .chat-empty #messages { display: none; }
 .chat-empty .empty-state {
-  flex: 0 0 auto;
-  padding: 8vh 24px 24px;
+  flex: 1 1 auto;
+  padding: 0 24px 0;
   margin: 0;
+  justify-content: center;
 }
 .chat-empty .composer-wrapper {
   margin: 0;
-  padding: 0 32px 32px;
+  padding: 0 32px 24px;
   max-width: 880px;
   width: 100%;
   align-self: center;
-  transform: translateY(-10vh);
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), padding 0.5s ease, max-width 0.5s ease;
+  flex-shrink: 0;
+  transition: padding 0.5s ease, max-width 0.5s ease;
 }
 .chat-empty .composer-box {
   min-height: 84px;
@@ -384,7 +385,7 @@ button { cursor: pointer; }
 /* ===== Composer ===== */
 .composer-wrapper {
   padding: 16px 24px 20px; flex-shrink: 0; margin: 0;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), padding 0.5s ease, max-width 0.5s ease;
+  transition: padding 0.5s ease, max-width 0.5s ease;
 }
 .composer-box {
   max-width: 720px; margin: 0 auto; display: flex; align-items: flex-end; gap: 8px;
