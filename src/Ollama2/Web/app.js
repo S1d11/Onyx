@@ -78,7 +78,7 @@
       state.currentModel = state.config.defaultModel;
       $("#composerModelLabel").textContent = state.currentModel || "Select";
       updateComposerModel();
-      if (!state.config.sidebarVisible) $("#sidebar").classList.add("collapsed");
+      if (!state.config.sidebarVisible) { $("#sidebar").classList.add("collapsed"); $("#topbarNewChat").classList.remove("hidden"); }
     }
     renderChatList();
     if (state.chats.length && !state.currentId) openChat(state.chats[0].id);
@@ -984,7 +984,13 @@
     $("#backFromLaunch").addEventListener("click", () => showView("chat"));
     $("#backFromSettings").addEventListener("click", () => showView("chat"));
 
-    $("#sidebarToggle") && $("#sidebarToggle").addEventListener("click", () => $("#sidebar").classList.toggle("collapsed"));
+    $("#sidebarToggle") && $("#sidebarToggle").addEventListener("click", () => {
+      const sb = $("#sidebar");
+      sb.classList.toggle("collapsed");
+      const isCollapsed = sb.classList.contains("collapsed");
+      $("#topbarNewChat").classList.toggle("hidden", !isCollapsed);
+    });
+    $("#topbarNewChat").addEventListener("click", newChat);
     $("#modelPill").addEventListener("click", (e) => {
       e.stopPropagation();
       const menu = $("#modelMenu");
@@ -1016,7 +1022,7 @@
     document.addEventListener("keydown", (e) => {
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key.toLowerCase() === "n") { e.preventDefault(); newChat(); }
-      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); }
+      else if (ctrl && e.key.toLowerCase() === "b") { e.preventDefault(); $("#sidebar").classList.toggle("collapsed"); $("#topbarNewChat").classList.toggle("hidden", !$("#sidebar").classList.contains("collapsed")); }
       else if (e.key === "Escape" && state.streaming) { stopGeneration(); }
     });
   }
