@@ -138,6 +138,9 @@
   // ---- chat list ----
   function renderChatList() {
     const list = $("#chatList");
+    // If a rename is in progress, preserve the input element
+    const renameInput = list.querySelector(".ci-rename-input");
+    if (renameInput) return;
     list.innerHTML = "";
     if (state.chats.length === 0) return;
     const label = document.createElement("div");
@@ -1162,7 +1165,6 @@
     const wrap = $("#contextSliderWrap");
     const fill = $("#contextSliderFill");
     const thumb = $("#contextSliderThumb");
-    let dragging = false;
 
     function setSlider(idx) {
       const pct = (idx / (ctxLabels.length - 1)) * 100;
@@ -1179,26 +1181,27 @@
       return Math.max(0, Math.min(ctxLabels.length - 1, idx));
     }
 
-    thumb.addEventListener("mousedown", (e) => { dragging = true; e.preventDefault(); });
-    wrap.addEventListener("mousedown", (e) => {
+    let dragging = false;
+    thumb.onmousedown = (e) => { dragging = true; e.preventDefault(); };
+    wrap.onmousedown = (e) => {
       const idx = snapToIndex(e.clientX);
       ctxIdx = idx;
       setSlider(idx);
       if (state.config) { state.config.numCtx = ctxValues[idx]; call("saveConfig", { config: state.config }); }
-    });
-    document.addEventListener("mousemove", (e) => {
+    };
+    document.onmousemove = (e) => {
       if (!dragging) return;
       const idx = snapToIndex(e.clientX);
       ctxIdx = idx;
       setSlider(idx);
-    });
-    document.addEventListener("mouseup", () => {
+    };
+    document.onmouseup = () => {
       if (dragging && state.config) {
         state.config.numCtx = ctxValues[ctxIdx];
         call("saveConfig", { config: state.config });
       }
       dragging = false;
-    });
+    };
 
     // Close behavior buttons
     const cb = cfg.closeBehavior || "tray";

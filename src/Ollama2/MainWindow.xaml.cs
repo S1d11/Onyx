@@ -64,7 +64,6 @@ public partial class MainWindow : Window
         core.Settings.UserAgent = "Onyx/2.11 (Windows; +https://github.com/S1d11/Ollama-2.0)";
 
         core.WebMessageReceived += OnWebMessageReceived;
-        core.NavigationCompleted += (_, _) => _bridge.SendInitialState();
 
         var cacheBuster = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         core.Navigate($"https://onyx.app/index.html?v={cacheBuster}");

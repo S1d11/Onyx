@@ -36,35 +36,16 @@ internal sealed class Bridge
     public void PostToWeb(object payload)
         => _win.PostWebMessageAsJson(JsonSerializer.Serialize(payload, _json));
 
-    public async void SendInitialState()
+    public void NotifyUpdateReady()
     {
-        try
+        if (!string.IsNullOrEmpty(App.PendingUpdatePath))
         {
-            var cfg = App.Config.Current;
-            var reachable = await App.Ollama.IsReachableAsync();
             PostToWeb(new
             {
-                @event = "state",
-                config = cfg,
-                chats = App.Chats.Chats,
-                serverReachable = reachable,
-                appVersion = UpdateService.CurrentVersion.ToString(3),
+                @event = "updateReady",
+                version = App.PendingUpdateVersion,
+                path = App.PendingUpdatePath,
             });
-
-            // If a background startup update check found a new version, notify the UI
-            if (!string.IsNullOrEmpty(App.PendingUpdatePath))
-            {
-                PostToWeb(new
-                {
-                    @event = "updateReady",
-                    version = App.PendingUpdateVersion,
-                    path = App.PendingUpdatePath,
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            PostToWeb(new { @event = "error", message = "Failed to load initial state: " + ex.Message });
         }
     }
 
@@ -138,16 +119,27 @@ internal sealed class Bridge
         // Auto-launch Ollama if enabled and using localhost
         if (cfg.AutoLaunchOllama && OllamaLauncher.IsLocalhost(cfg.ServerUrl))
         {
-            var reachable = await App.Ollama.IsReachableAsync();
-            if (!reachable)
+            try
             {
-                PostToWeb(new { @event = "ollamaStarting" });
-                await OllamaLauncher.EnsureRunningAsync(cfg.ServerUrl);
+                var reachable = await App.Ollama.IsReachableAsync();
+                if (!reachable)
+                {
+                    PostToWeb(new { @event = "ollamaStarting" });
+                    await OllamaLauncher.EnsureRunningAsync(cfg.ServerUrl);
+                }
+            }
+            catch (Exception ex)
+            {
+                PostToWeb(new { @event = "error", message = "Failed to start Ollama: " + ex.Message });
             }
         }
 
         var reachableFinal = await App.Ollama.IsReachableAsync();
         var hw = HardwareDetector.Detect();
+
+        // If a background startup update check found a new version, notify the UI
+        NotifyUpdateReady();
+
         return new
         {
             config = cfg,
@@ -425,7 +417,10 @@ internal sealed class Bridge
         {
             // Clean up this chat's CTS from the concurrent map
             _chatCtsByChatId.Remove(chatId);
-            try { chatCts.Dispose(); } catch { }
+            if (chatCts != null)
+            {
+                try { chatCts.Dispose(); } catch { }
+            }
         }
         return true;
     }
