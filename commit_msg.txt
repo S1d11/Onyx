@@ -1,0 +1,17 @@
+Add collapsible thinking/reasoning section for reasoning models
+
+Detects  ...  and <thinking>...</thinking> tags from reasoning models
+(QwQ, DeepSeek-R1, etc.) and displays them as a collapsible thought
+section above the main response.
+
+- During streaming: shows "Thinking..." with pulsing dot while inside
+  thinking tags
+- When thinking completes: shows "Thought for X.X seconds" with
+  expandable/collapsible dropdown containing the reasoning text
+- Stores thinking content separately so it persists across reloads
+- Backend parses and strips tags before storing; frontend reconstructs
+  tags when sending history to Ollama for context
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

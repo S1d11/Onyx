@@ -27,6 +27,31 @@
     return state.currentId && isStreaming(state.currentId);
   }
 
+  // Extract thinking/reasoning content wrapped in <think>...</think> tags
+  function extractThinking(text) {
+    const openTags = ["<think>", "<thinking>"];
+    const closeTags = ["</think>", "</thinking>"];
+    let openIdx = -1, openTag = "";
+    for (const tag of openTags) {
+      const idx = text.indexOf(tag);
+      if (idx !== -1 && (openIdx === -1 || idx < openIdx)) { openIdx = idx; openTag = tag; }
+    }
+    if (openIdx === -1) return { thinking: null, main: text, done: true };
+    let closeIdx = -1, closeTag = "";
+    for (const tag of closeTags) {
+      const idx = text.indexOf(tag, openIdx + openTag.length);
+      if (idx !== -1 && (closeIdx === -1 || idx < closeIdx)) { closeIdx = idx; closeTag = tag; }
+    }
+    const before = text.slice(0, openIdx);
+    if (closeIdx === -1) {
+      const thinking = text.slice(openIdx + openTag.length);
+      return { thinking, main: before, done: false };
+    }
+    const thinking = text.slice(openIdx + openTag.length, closeIdx);
+    const after = text.slice(closeIdx + closeTag.length);
+    return { thinking, main: before + after, done: true };
+  }
+
   let _rpcCounter = 0;
   const pending = new Map();
   function call(action, payload = {}) {
@@ -221,16 +246,31 @@
   function renderMessages(c) {
     const m = $("#messages");
     m.innerHTML = "";
-    c.messages.forEach(msg => appendMessageEl(msg.role, msg.content, { sources: msg.sources, error: msg.error, evalCount: msg.evalCount, totalMs: msg.totalMs, images: msg.images }));
+    c.messages.forEach(msg => appendMessageEl(msg.role, msg.content, {
+      sources: msg.sources, error: msg.error, evalCount: msg.evalCount, totalMs: msg.totalMs,
+      images: msg.images, thinking: msg.thinking, thinkingMs: msg.thinkingMs
+    }));
     // If this chat is currently streaming, re-create the in-progress assistant element
     const stream = state.streaming.get(c.id);
     if (stream) {
       const el = appendMessageEl("assistant", "");
-      stream.el = el; // update reference to the new DOM element
-      if (stream.text) {
-        el.querySelector(".msg-body").innerHTML = OllamaMD.render(stream.text) + '<span class="cursor"></span>';
+      stream.el = el;
+      const parsed = extractThinking(stream.text);
+      const opts = {
+        thinking: parsed.thinking,
+        thinkingMs: stream.thinkingMs,
+        thinkingExpanded: stream.thinkingExpanded,
+        sources: stream.sources,
+        isStreaming: true
+      };
+      if (parsed.thinking && !parsed.done) {
+        // Still in thinking mode: show thinking indicator
+        renderThinkingInProgress(el.querySelector(".msg-body"), parsed.thinking, parsed.main);
       } else {
-        el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
+        renderAssistantBody(el.querySelector(".msg-body"), parsed.main || "", opts);
+        if (!parsed.done) {
+          el.querySelector(".msg-main-content").innerHTML += '<span class="cursor"></span>';
+        }
       }
       // Re-attach search status if present
       if (stream.searchStatusEl) {
@@ -238,6 +278,25 @@
       }
       m.scrollTop = m.scrollHeight;
     }
+  }
+
+  function renderThinkingInProgress(body, thinkingText, mainText) {
+    body.innerHTML = "";
+    const thoughtSection = document.createElement("div");
+    thoughtSection.className = "msg-thinking";
+    const header = document.createElement("div");
+    header.className = "msg-thinking-header in-progress";
+    header.innerHTML = `<span class="thinking-dot"></span> Thinking…`;
+    const content = document.createElement("div");
+    content.className = "msg-thinking-content";
+    content.innerHTML = OllamaMD.render(thinkingText);
+    thoughtSection.appendChild(header);
+    thoughtSection.appendChild(content);
+    body.appendChild(thoughtSection);
+    const mainDiv = document.createElement("div");
+    mainDiv.className = "msg-main-content";
+    mainDiv.innerHTML = mainText ? OllamaMD.render(mainText) : '<span class="cursor"></span>';
+    body.appendChild(mainDiv);
   }
 
   function appendMessageEl(role, content, opts = {}) {
@@ -249,15 +308,48 @@
     if (role === "user" && opts.images && opts.images.length) {
       imagesHtml = `<div class="msg-images">${opts.images.map(url => `<img src="${url}" alt="attachment">`).join("")}</div>`;
     }
-    const bodyHtml = opts.error
-      ? `<div class="msg-error">${OllamaMD.escape(opts.error)}</div>`
-      : (role === "user" ? imagesHtml + OllamaMD.escape(content).replace(/\n/g, "<br>") : OllamaMD.render(content));
-    wrap.innerHTML = `<div class="msg-role">${role}</div><div class="msg-body">${bodyHtml}</div>`;
-    if (opts.sources && opts.sources.length) wrap.querySelector(".msg-body").appendChild(buildSourcesEl(opts.sources, true));
-    if (role === "assistant" && !opts.error) appendMsgActions(wrap, content, opts);
+    const body = document.createElement("div");
+    body.className = "msg-body";
+    wrap.innerHTML = `<div class="msg-role">${role}</div>`;
+    wrap.appendChild(body);
+
+    if (opts.error) {
+      body.innerHTML = `<div class="msg-error">${OllamaMD.escape(opts.error)}</div>`;
+    } else if (role === "user") {
+      body.innerHTML = imagesHtml + OllamaMD.escape(content).replace(/\n/g, "<br>");
+    } else {
+      // Assistant message: build body dynamically with optional thinking section
+      renderAssistantBody(body, content, opts);
+    }
+
     m.appendChild(wrap);
     m.scrollTop = m.scrollHeight;
     return wrap;
+  }
+
+  function renderAssistantBody(body, content, opts = {}) {
+    body.innerHTML = "";
+    if (opts.thinking) {
+      const thoughtSection = document.createElement("div");
+      thoughtSection.className = "msg-thinking" + (opts.thinkingExpanded ? "" : " collapsed");
+      const header = document.createElement("div");
+      header.className = "msg-thinking-header";
+      const duration = opts.thinkingMs ? ` for ${(opts.thinkingMs / 1000).toFixed(1)}s` : "";
+      header.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Thought${duration}`;
+      header.addEventListener("click", () => { thoughtSection.classList.toggle("collapsed"); });
+      const thinkingContent = document.createElement("div");
+      thinkingContent.className = "msg-thinking-content";
+      thinkingContent.innerHTML = OllamaMD.render(opts.thinking);
+      thoughtSection.appendChild(header);
+      thoughtSection.appendChild(thinkingContent);
+      body.appendChild(thoughtSection);
+    }
+    const mainDiv = document.createElement("div");
+    mainDiv.className = "msg-main-content";
+    mainDiv.innerHTML = OllamaMD.render(content);
+    body.appendChild(mainDiv);
+    if (opts.sources && opts.sources.length) body.appendChild(buildSourcesEl(opts.sources, true));
+    if (!opts.error) appendMsgActions(body.closest(".msg"), content, opts);
   }
 
   function buildSourcesEl(sources, compact) {
@@ -620,15 +712,20 @@
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
     // Register per-chat streaming state
-    state.streaming.set(chat.id, { el, text: "", sources: null, searchStatusEl: null });
+    state.streaming.set(chat.id, { el, text: "", sources: null, searchStatusEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
     setStreamingUI(true);
     renderChatList(); // show streaming indicator
 
     // Build history — include images on the latest user message
+    // Reconstruct thinking tags for assistant messages so the model has full context
     const history = chat.messages
       .filter(m => m.role === "user" || (m.role === "assistant" && m.content))
       .map((m, i) => {
-        const msg = { role: m.role, content: m.content };
+        let content = m.content;
+        if (m.role === "assistant" && m.thinking) {
+          content = `\n\n${m.content}`;
+        }
+        const msg = { role: m.role, content };
         // Attach images to the last user message
         if (m.role === "user" && m.images && m.images.length && i === chat.messages.length - 1) {
           msg.images = m.images.map(dataUrl => dataUrlToBase64(dataUrl));
@@ -644,8 +741,34 @@
     const stream = state.streaming.get(msg.chatId);
     if (!stream) return;
     stream.text += msg.content;
+
+    const parsed = extractThinking(stream.text);
+    // Track thinking timing
+    if (parsed.thinking && !stream.thinkingStartTime) {
+      stream.thinkingStartTime = Date.now();
+    }
+    if (parsed.done && stream.thinkingStartTime && !stream.thinkingEndTime) {
+      stream.thinkingEndTime = Date.now();
+      stream.thinkingMs = stream.thinkingEndTime - stream.thinkingStartTime;
+    }
+
     if (stream.el) {
-      stream.el.querySelector(".msg-body").innerHTML = OllamaMD.render(stream.text) + '<span class="cursor"></span>';
+      const body = stream.el.querySelector(".msg-body");
+      if (parsed.thinking && !parsed.done) {
+        // Still thinking: show in-progress indicator
+        renderThinkingInProgress(body, parsed.thinking, parsed.main);
+      } else {
+        renderAssistantBody(body, parsed.main || "", {
+          thinking: parsed.thinking,
+          thinkingMs: stream.thinkingMs,
+          thinkingExpanded: stream.thinkingExpanded,
+          isStreaming: true
+        });
+        if (!parsed.done) {
+          const mainDiv = body.querySelector(".msg-main-content");
+          if (mainDiv) mainDiv.innerHTML += '<span class="cursor"></span>';
+        }
+      }
     }
     // Only auto-scroll if we're viewing this chat
     if (msg.chatId === state.currentId) {
@@ -659,29 +782,42 @@
     if (msg.chatId === state.currentId) setStreamingUI(false);
     renderChatList(); // remove streaming indicator
 
+    // Parse thinking from the full raw text
+    const parsed = stream ? extractThinking(stream.text) : { thinking: null, main: "", done: true };
+    const mainText = parsed.main;
+    const thinkingText = parsed.thinking;
+    let thinkingMs = stream?.thinkingMs || 0;
+    if (thinkingText && !thinkingMs && stream?.thinkingStartTime) {
+      thinkingMs = Date.now() - stream.thinkingStartTime;
+    }
+
     if (!stream) {
       // Stream was not visible (chat not open). Still need to store the message.
       const c = state.chats.find(x => x.id === msg.chatId);
       if (c && !msg.cancelled) {
-        c.messages.push({ role: "assistant", content: "", sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
+        c.messages.push({ role: "assistant", content: mainText, thinking: thinkingText, thinkingMs, sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
       }
       return;
     }
 
-    const text = stream.text;
     if (stream.el) {
-      stream.el.querySelector(".msg-body").innerHTML = OllamaMD.render(text);
-      if (msg.sources && msg.sources.length) stream.el.querySelector(".msg-body").appendChild(buildSourcesEl(msg.sources, true));
-      appendMsgActions(stream.el, text, { evalCount: msg.evalCount, totalMs: msg.totalMs });
+      renderAssistantBody(stream.el.querySelector(".msg-body"), mainText, {
+        thinking: thinkingText,
+        thinkingMs,
+        thinkingExpanded: stream.thinkingExpanded,
+        sources: msg.sources,
+        evalCount: msg.evalCount,
+        totalMs: msg.totalMs
+      });
     }
     const c = state.chats.find(x => x.id === msg.chatId);
     if (c) {
       if (!msg.cancelled) {
-        c.messages.push({ role: "assistant", content: text, sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
+        c.messages.push({ role: "assistant", content: mainText, thinking: thinkingText, thinkingMs, sources: msg.sources, evalCount: msg.evalCount, totalMs: msg.totalMs });
       }
       if (c.title === "New Chat") {
         const firstUser = c.messages.find(m => m.role === "user");
-        c.title = generateTitle(firstUser?.content || text);
+        c.title = generateTitle(firstUser?.content || mainText);
         call("renameChat", { id: c.id, title: c.title }).catch(() => {});
         renderChatList();
       }
@@ -748,7 +884,11 @@
     while (c.messages.length && c.messages[c.messages.length - 1].role === "assistant") c.messages.pop();
     renderMessages(c);
     const history = c.messages.map(m => {
-      const msg = { role: m.role, content: m.content };
+      let content = m.content;
+      if (m.role === "assistant" && m.thinking) {
+        content = `\n\n${m.content}`;
+      }
+      const msg = { role: m.role, content };
       if (m.role === "user" && m.images && m.images.length) {
         msg.images = m.images.map(dataUrl => dataUrlToBase64(dataUrl));
       }
@@ -756,7 +896,7 @@
     });
     const el = appendMessageEl("assistant", "");
     el.querySelector(".msg-body").innerHTML = '<span class="cursor"></span>';
-    state.streaming.set(c.id, { el, text: "", sources: null, searchStatusEl: null });
+    state.streaming.set(c.id, { el, text: "", sources: null, searchStatusEl: null, thinkingStartTime: 0, thinkingEndTime: 0, thinkingMs: 0, thinkingExpanded: false });
     setStreamingUI(true);
     renderChatList();
     call("sendMessage", { chatId: c.id, model: state.currentModel, messages: history, webSearchMode: state.config?.webSearchMode || (state.config?.webSearchEnabled ? "auto" : "off") });

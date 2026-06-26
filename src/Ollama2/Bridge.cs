@@ -370,10 +370,12 @@ internal sealed class Bridge
             }
 
             var finalText = assistant.ToString();
+            var (mainText, thinkingText) = ExtractThinking(finalText);
             var stored = new ChatStoredMessage
             {
                 Role = "assistant",
-                Content = finalText,
+                Content = mainText,
+                Thinking = thinkingText,
                 Sources = sources,
                 EvalCount = evalCount,
                 TotalMs = sw.ElapsedMilliseconds,
@@ -424,6 +426,33 @@ internal sealed class Bridge
             "max" => 1.2,
             _ => 0.7,
         };
+
+    /// <summary>Extract  ...  or <thinking>...</thinking> content, returning (main, thinking).</summary>
+    private static (string main, string? thinking) ExtractThinking(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return (text, null);
+        var openTags = new[] { "", "<thinking>" };
+        var closeTags = new[] { "", "</thinking>" };
+        int openIdx = -1, closeIdx = -1;
+        string openTag = "", closeTag = "";
+        foreach (var tag in openTags)
+        {
+            var idx = text.IndexOf(tag, StringComparison.OrdinalIgnoreCase);
+            if (idx != -1 && (openIdx == -1 || idx < openIdx)) { openIdx = idx; openTag = tag; }
+        }
+        if (openIdx == -1) return (text, null);
+        foreach (var tag in closeTags)
+        {
+            var idx = text.IndexOf(tag, openIdx + openTag.Length, StringComparison.OrdinalIgnoreCase);
+            if (idx != -1 && (closeIdx == -1 || idx < closeIdx)) { closeIdx = idx; closeTag = tag; }
+        }
+        if (closeIdx == -1) return (text, null); // unclosed tag: keep raw
+        var before = text.Substring(0, openIdx);
+        var thinking = text.Substring(openIdx + openTag.Length, closeIdx - openIdx - openTag.Length);
+        var after = text.Substring(closeIdx + closeTag.Length);
+        var main = before + after;
+        return (main.TrimStart(), thinking.Trim());
+    }
 
     private static string BuildSearchContext(WebSearchResult search)
     {

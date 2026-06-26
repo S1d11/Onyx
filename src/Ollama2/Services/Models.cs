@@ -92,6 +92,8 @@ public class ChatStoredMessage
     public string? Error { get; set; }
     public long? EvalCount { get; set; }
     public long? TotalMs { get; set; }
+    public string? Thinking { get; set; }
+    public long? ThinkingMs { get; set; }
 }
 
 public class StoredChat
