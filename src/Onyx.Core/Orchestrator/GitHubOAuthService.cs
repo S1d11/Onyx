@@ -48,13 +48,17 @@ public class GitHubOAuthService
         if (!ConnectorCredentials.GitHubConfigured)
             return null;
 
-        var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        var req = new HttpRequestMessage(HttpMethod.Post, DeviceCodeUrl)
         {
-            ["client_id"] = ConnectorCredentials.GitHubClientId,
-            ["scope"] = Scopes,
-        });
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client_id"] = ConnectorCredentials.GitHubClientId,
+                ["scope"] = Scopes,
+            }),
+        };
+        req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-        var resp = await Http.PostAsync(DeviceCodeUrl, content, ct);
+        var resp = await Http.SendAsync(req, ct);
         var json = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -81,16 +85,23 @@ public class GitHubOAuthService
         {
             await Task.Delay(interval * 1000, ct);
 
-            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            var req = new HttpRequestMessage(HttpMethod.Post, TokenUrl)
             {
-                ["client_id"] = ConnectorCredentials.GitHubClientId,
-                ["device_code"] = deviceCode,
-                ["grant_type"] = "urn:ietf:params:oauth:grant-type:device_code",
-            });
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["client_id"] = ConnectorCredentials.GitHubClientId,
+                    ["device_code"] = deviceCode,
+                    ["grant_type"] = "urn:ietf:params:oauth:grant-type:device_code",
+                }),
+            };
+            req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-            var resp = await Http.PostAsync(TokenUrl, content, ct);
+            var resp = await Http.SendAsync(req, ct);
             var json = await resp.Content.ReadAsStringAsync(ct);
-            var doc = JsonDocument.Parse(json);
+
+            JsonDocument doc;
+            try { doc = JsonDocument.Parse(json); }
+            catch { continue; } // Not JSON — skip and keep polling
 
             // Check for access_token (success)
             if (doc.RootElement.TryGetProperty("access_token", out var token))
